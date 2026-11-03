@@ -1,0 +1,47 @@
+# Tự đóng gói file cài Windows (TunIdeas-Setup-x.y.z.exe) và đăng lên mục Releases
+# Muốn ra bản mới: tăng "version" trong package.json rồi đưa mã lên.
+name: Đóng gói bản Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', 'desktop/**', 'package.json', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Cài công cụ
+        run: npm install
+      - name: Đóng gói
+        run: npx electron-builder --win nsis --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Lấy số phiên bản
+        id: ver
+        shell: bash
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TunIdeas-Windows-${{ steps.ver.outputs.v }}
+          path: dist/*.exe
+      - name: Đăng lên Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: Tun Ideas ${{ steps.ver.outputs.v }}
+          files: dist/*.exe
+          make_latest: true
+          body: |
+            **Cài trên Windows:** tải file `TunIdeas-Setup-${{ steps.ver.outputs.v }}.exe` bên dưới, mở ra và làm theo hướng dẫn.
+            Nếu Windows hiện "Windows protected your PC": bấm **More info** → **Run anyway** (app chưa mua chứng chỉ ký số).
+
+            **Dùng trên Android:** mở https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ bằng Chrome → menu ⋮ → **Thêm vào màn hình chính**.

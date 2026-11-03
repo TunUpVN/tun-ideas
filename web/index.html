@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tun Ideas</title>
+<meta name="theme-color" content="#e6dcc3">
+<meta name="description" content="Tun Ideas — phòng họp nơi các AI tranh luận về ý tưởng của bạn">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page: #e6dcc3; --paper: #fbf5e6; --paper-2: #f4ecd6; --ink: #2a2723; --muted: #7b7365;
+    --line: #2a2723; --soft: #cfc4a8;
+    --green: #3b8a5c; --green-d: #2c6b47; --yellow: #e9c24a; --blue: #4a7fc0; --red: #c4553c; --gray: #b8b0a0;
+    --wood: #a8744a; --wood-d: #7d5434;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Space Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+    background: var(--page); color: var(--ink); font-size: 14px; line-height: 1.55;
+    background-image: radial-gradient(rgba(42,39,35,.07) 1px, transparent 1px); background-size: 6px 6px;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; height: 100vh; padding: 18px; }
+  .panel { background: var(--paper); border: 3px solid var(--line); box-shadow: 5px 5px 0 rgba(42,39,35,.18); }
+  .eyebrow { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .tag { display: inline-block; background: var(--ink); color: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 2px 8px; }
+
+  /* Buttons */
+  .btn { background: var(--paper); border: 3px solid var(--line); box-shadow: 3px 3px 0 var(--line); padding: 6px 12px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; transition: transform .05s, box-shadow .05s; }
+  .btn:hover { background: #fff; }
+  .btn:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
+  .btn.go { background: var(--green); color: #fff; }
+  .btn.go:hover { background: #44996a; }
+  .btn.stop { color: var(--red); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 var(--line); }
+  .chip { background: #fff; border: 2px solid var(--line); padding: 1px 8px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+  .chip:hover { background: var(--yellow); }
+
+  /* Main column */
+  main { display: flex; flex-direction: column; min-height: 0; gap: 18px; }
+  .head { padding: 16px 20px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .head .t { flex: 1; min-width: 240px; }
+  .head h1 { margin: 4px 0 0; font-size: 21px; line-height: 1.3; letter-spacing: -.01em; }
+  .head .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .chat { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .chat-top { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 3px solid var(--line); background: var(--paper-2); gap: 10px; }
+  .status { font-size: 12.5px; color: var(--muted); }
+  .feed { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;
+    background-image: linear-gradient(var(--paper-2) 1px, transparent 1px), linear-gradient(90deg, var(--paper-2) 1px, transparent 1px); background-size: 24px 24px; }
+  .empty { margin: auto; text-align: center; max-width: 520px; }
+  .empty .cast { display: flex; justify-content: center; gap: 14px; margin-bottom: 14px; }
+  .empty h2 { font-size: 18px; margin: 6px 0; }
+  .empty p { color: var(--muted); margin: 0 0 14px; }
+  .empty .ex { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+  .msg { display: flex; gap: 12px; align-items: flex-start; max-width: 860px; }
+  .msg .body { min-width: 0; }
+  .who { font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .who .meta { font-weight: 400; color: var(--muted); font-size: 11.5px; }
+  .bubble { background: #fffdf6; border: 2px solid var(--line); box-shadow: 3px 3px 0 rgba(42,39,35,.22); padding: 10px 14px; overflow-wrap: anywhere; position: relative; }
+  .bubble p { margin: 0 0 8px; } .bubble p:last-child { margin: 0; }
+  .bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+  .bubble code { background: var(--paper-2); padding: 0 4px; border: 1px solid var(--soft); }
+  .bubble.summary { background: #eef6ef; border-color: var(--green-d); }
+  .msg.owner { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.owner .who { justify-content: flex-end; }
+  .msg.owner .bubble { background: #fbe9a8; }
+  .portrait { width: 44px; height: 44px; flex: none; border: 2px solid var(--line); background: var(--paper-2); display: grid; place-items: center; }
+  .portrait svg { width: 36px; height: 36px; }
+  .owner-box { width: 44px; height: 44px; flex: none; background: var(--yellow); border: 2px solid var(--line); display: grid; place-items: center; font-weight: 700; font-size: 20px; box-shadow: inset -4px -4px 0 rgba(0,0,0,.12); }
+  .notice { align-self: center; font-size: 12px; color: var(--muted); border: 2px dashed var(--soft); background: var(--paper); padding: 4px 12px; max-width: 760px; text-align: center; }
+  .notice.err { color: var(--red); border-color: var(--red); }
+  .round-sep { align-self: center; }
+  .vote { margin-top: 10px; padding-top: 8px; border-top: 2px dashed var(--soft); font-size: 12.5px; }
+  .vote .vh { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 700; }
+  .vote .vh svg { width: 18px; height: 18px; }
+  .vote .why { color: var(--muted); margin-top: 3px; }
+  .vote .flip { background: var(--yellow); border: 2px solid var(--line); font-size: 10.5px; padding: 0 6px; letter-spacing: .06em; }
+  .vote.missing { color: var(--red); }
+  .tally { align-self: center; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; background: var(--paper); border: 2px solid var(--line); padding: 6px 12px; font-size: 12.5px; }
+  .tally .chip svg { width: 16px; height: 16px; }
+  .tally .chip.lead { background: var(--yellow); }
+  .verdict { align-self: stretch; border: 3px solid var(--line); box-shadow: 4px 4px 0 var(--line); padding: 14px 18px; display: flex; gap: 14px; align-items: center; }
+  .verdict.win { background: #dff0e2; } .verdict.lose { background: #f6e1d8; }
+  .verdict .big { font-size: 16px; font-weight: 700; }
+  .verdict .portrait { width: 56px; height: 56px; } .verdict .portrait svg { width: 46px; height: 46px; }
+  .seat .vt { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .typing .bubble { display: inline-flex; gap: 5px; padding: 14px; }
+  .typing i { width: 7px; height: 7px; background: var(--ink); animation: blink 1.2s infinite steps(1); }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 100% { opacity: .2; } 30% { opacity: 1; } }
+
+  .composer { border-top: 3px solid var(--line); padding: 12px 20px 14px; background: var(--paper); }
+  .mention-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  .mention-bar .chip svg { width: 16px; height: 16px; }
+  .composer .row { display: flex; gap: 12px; align-items: flex-end; }
+  .composer textarea { flex: 1; resize: none; border: 3px solid var(--line); background: #fffdf6; padding: 9px 12px; min-height: 48px; max-height: 180px; outline: none; }
+  .composer textarea:focus { background: #fff; box-shadow: inset 0 0 0 2px var(--yellow); }
+  .hint { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+
+  /* Side column */
+  .side { display: flex; flex-direction: column; gap: 18px; min-height: 0; overflow: auto; padding-right: 6px; padding-bottom: 6px; }
+  .side .panel { padding: 16px 18px; }
+  .side h2 { font-size: 17px; margin: 4px 0 12px; }
+
+  /* Meeting room scene */
+  .room { position: relative; height: 272px; border: 3px solid var(--line); overflow: hidden;
+    background: repeating-conic-gradient(#d9ccae 0 25%, #e4d8bc 0 50%) 0 0 / 22px 22px; }
+  .room .wall { position: absolute; left: 0; right: 0; top: 0; height: 40px; background: #c9b896; border-bottom: 3px solid var(--line); }
+  .room .win { position: absolute; top: 7px; width: 34px; height: 22px; background: #22305a; border: 3px solid #6b5a3e; }
+  .room .win::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #6b5a3e; }
+  .room .win i { position: absolute; width: 2px; height: 2px; background: #fff; }
+  .room .sign { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 140px; background: #fffdf6; border: 2px solid var(--line); padding: 2px 6px 4px; font-size: 9.5px; font-weight: 700; }
+  .room .sign .bar { height: 4px; background: var(--soft); margin-top: 2px; }
+  .room .sign .bar b { display: block; height: 100%; background: var(--green); width: 0; transition: width .4s; }
+  .room .table { position: absolute; left: 50%; top: 135px; transform: translate(-50%, -50%); width: 64%; height: 46px; background: var(--wood); border: 3px solid var(--line); box-shadow: inset 0 -6px 0 var(--wood-d); }
+  .room .table::before { content: ""; position: absolute; left: 8px; right: 8px; top: 8px; height: 3px; background: rgba(255,255,255,.18); }
+  .room .paper { position: absolute; width: 14px; height: 10px; background: #fff; border: 1px solid var(--line); top: 12px; }
+  .room .plant { position: absolute; width: 18px; height: 24px; }
+  .room .plant::before { content: ""; position: absolute; left: 1px; right: 1px; top: 0; height: 14px; background: #5b8f5a; border: 2px solid var(--line); }
+  .room .plant::after { content: ""; position: absolute; left: 3px; right: 3px; bottom: 0; height: 10px; background: #a0613c; border: 2px solid var(--line); }
+  .seat { position: absolute; width: 56px; margin-left: -28px; text-align: center; transition: left .3s, top .3s; }
+  .seat .spr { width: 40px; height: 40px; margin: 0 auto; position: relative; }
+  .seat .spr svg { width: 40px; height: 40px; display: block; }
+  .seat .nm { font-size: 9.5px; font-weight: 700; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seat.talking .spr svg { animation: bob .5s infinite steps(2); }
+  .seat.talking .say { display: block; }
+  .seat .say { display: none; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: #fff; border: 2px solid var(--line); font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 14px; white-space: nowrap; }
+  .seat .say::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 6px; height: 6px; background: #fff; border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: translateX(-50%) rotate(45deg); }
+  .seat.idle .spr svg { animation: breathe 2.4s infinite steps(2); }
+  .seat.chair-b .owner-box { width: 34px; height: 34px; font-size: 16px; margin: 3px auto; }
+  @keyframes bob { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes breathe { 0%, 70% { transform: translateY(0); } 85% { transform: translateY(1px); } }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); margin-top: 10px; }
+  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; vertical-align: -1px; background: var(--c); border: 1px solid var(--line); }
+
+  /* Teammates list */
+  .mate { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 2px dashed var(--soft); }
+  .mate:last-child { border-bottom: 0; }
+  .mate .spr svg { width: 34px; height: 34px; display: block; }
+  .mate.off { opacity: .45; }
+  .mate.off .spr { filter: grayscale(1); }
+  .mate .info { flex: 1; min-width: 0; }
+  .mate .nm { font-weight: 700; font-size: 14px; }
+  .mate .sub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toggle { width: 38px; height: 20px; border: 2px solid var(--line); background: var(--gray); position: relative; flex: none; }
+  .toggle input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .toggle i { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: var(--paper); border: 2px solid var(--line); transition: left .1s; pointer-events: none; }
+  .toggle.on { background: var(--green); }
+  .toggle.on i { left: 20px; }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(42,39,35,.45); display: none; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { width: min(900px, 100%); max-height: 92vh; display: flex; flex-direction: column; }
+  .modal header { padding: 14px 20px; border-bottom: 3px solid var(--line); display: flex; justify-content: space-between; align-items: center; background: var(--paper-2); }
+  .modal header h2 { margin: 0; font-size: 17px; }
+  .modal .content { overflow: auto; padding: 6px 20px 20px; }
+  .modal footer { padding: 12px 20px; border-top: 3px solid var(--line); display: flex; justify-content: flex-end; gap: 12px; align-items: center; background: var(--paper-2); }
+  .modal h3 { margin: 22px 0 6px; }
+  .help { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .help a, .field a { color: var(--blue); }
+  .field { display: grid; gap: 3px; margin-bottom: 10px; }
+  .field label { font-size: 11.5px; color: var(--muted); }
+  .field input, .field select, .field textarea { border: 2px solid var(--line); background: #fffdf6; padding: 6px 9px; width: 100%; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { background: #fff; box-shadow: inset 0 0 0 2px var(--yellow); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 12px; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink) !important; }
+  .chk input { width: auto !important; margin: 0; accent-color: var(--green); }
+  .mcard { border: 2px solid var(--line); background: var(--paper-2); padding: 12px; margin-bottom: 12px; }
+  .mcard .top { display: grid; grid-template-columns: 1fr 1.3fr 1.4fr 52px; gap: 10px; align-items: end; }
+  .mcard input[type=color] { width: 52px; height: 34px; padding: 2px; }
+  .habits { display: flex; gap: 6px; flex-wrap: wrap; }
+  .avatars { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 10px; }
+  .avatars button { border: 2px solid var(--soft); background: #fffdf6; padding: 3px; width: 44px; height: 44px; }
+  .avatars button svg { width: 34px; height: 34px; display: block; }
+  .avatars button.sel { border-color: var(--line); background: var(--yellow); box-shadow: 2px 2px 0 var(--line); }
+  .mcard .acts { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .test-out { font-size: 12px; color: var(--muted); flex: 1; min-width: 200px; }
+  .test-out.ok { color: var(--green-d); } .test-out.bad { color: var(--red); }
+
+  /* Thương hiệu */
+  .brand { display: flex; align-items: center; gap: 10px; padding-right: 16px; border-right: 3px dashed var(--soft); }
+  .brand .logo { width: 44px; height: 44px; background: var(--paper-2); border: 2px solid var(--line); display: grid; place-items: center; }
+  .brand .logo svg { width: 36px; height: 36px; }
+  .brand b { display: block; font-size: 17px; line-height: 1.1; }
+  .brand small { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+  /* Hướng dẫn kết nối */
+  .wiz { width: min(680px, 100%); }
+  .wiz .content { padding: 18px 22px 22px; }
+  .wiz .steps { display: flex; gap: 6px; align-items: center; }
+  .wiz .steps i { width: 26px; height: 8px; background: var(--soft); border: 2px solid var(--line); }
+  .wiz .steps i.on { background: var(--green); } .wiz .steps i.cur { background: var(--yellow); }
+  .wiz h3 { margin: 4px 0 8px; font-size: 18px; }
+  .wiz ol { padding-left: 20px; margin: 8px 0 14px; } .wiz li { margin-bottom: 6px; }
+  .wiz .cast { display: flex; gap: 10px; margin: 6px 0 14px; }
+  .wiz .cast .portrait { width: 52px; height: 52px; } .wiz .cast svg { width: 42px; height: 42px; }
+  .wiz .box { background: var(--paper-2); border: 2px solid var(--line); padding: 10px 12px; margin: 10px 0; font-size: 13px; }
+  .wiz .box.warn { background: #fbefc8; }
+  .wiz .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .wiz .row input { flex: 1; min-width: 220px; border: 2px solid var(--line); background: #fffdf6; padding: 7px 10px; outline: none; }
+  .wiz code.cmd { display: block; background: var(--ink); color: #f6eedb; padding: 8px 10px; margin: 6px 0; font-size: 13px; overflow-x: auto; }
+  .wiz .res { font-size: 12.5px; margin-top: 8px; min-height: 18px; }
+  .wiz .res.ok { color: var(--green-d); } .wiz .res.bad { color: var(--red); }
+  .wiz .sum div { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 2px dashed var(--soft); }
+  .wiz .sum svg { width: 28px; height: 28px; }
+  .wiz a.btn { text-decoration: none; color: var(--ink); }
+  .badge { display: inline-block; border: 2px solid var(--line); padding: 0 8px; font-size: 11.5px; font-weight: 700; background: var(--yellow); }
+
+  /* Lịch sử */
+  .hist-item { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 2px dashed var(--soft); }
+  .hist-item .t { flex: 1; min-width: 0; }
+  .hist-item .t b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-item .t small { color: var(--muted); }
+
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
+    main { min-height: 86vh; }
+    .side { overflow: visible; }
+    .grid2, .grid4, .mcard .top { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 13.5px; }
+    .app { padding: 10px; gap: 12px; }
+    .panel { box-shadow: 3px 3px 0 rgba(42,39,35,.18); }
+    .head { padding: 12px; gap: 10px; }
+    .brand { border-right: 0; padding-right: 0; width: 100%; }
+    .head h1 { font-size: 16px; }
+    .head .controls { gap: 6px; }
+    .head .controls .btn { padding: 4px 7px; font-size: 11.5px; box-shadow: 2px 2px 0 var(--line); }
+    .chat-top { padding: 8px 12px; }
+    .feed { padding: 12px; gap: 12px; }
+    .portrait, .owner-box { width: 34px; height: 34px; font-size: 15px; }
+    .portrait svg { width: 28px; height: 28px; }
+    .bubble { padding: 8px 10px; }
+    .composer { padding: 10px 12px; }
+    .composer .hint { display: none; }
+    .modal-bg { padding: 6px; }
+    .modal .content { padding: 4px 12px 14px; }
+    .side .panel { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <main>
+    <section class="panel head">
+      <div class="brand"><span class="logo" id="brandLogo"></span><div><b>Tun Ideas</b><small>Phòng họp AI</small></div></div>
+      <div class="t">
+        <div class="eyebrow">Chủ đề</div>
+        <h1 id="topicText">Chưa có chủ đề</h1>
+      </div>
+      <div class="controls">
+        <button class="btn" id="btnMore" title="Mỗi thành viên nói thêm một lượt">＋ Thêm 1 vòng</button>
+        <button class="btn" id="btnSummary" title="Nhờ một AI tổng kết">✎ Tổng kết</button>
+        <button class="btn stop" id="btnStop" disabled>■ Dừng</button>
+        <button class="btn" id="btnExport" title="Tải biên bản .md">⤓ Biên bản</button>
+        <button class="btn" id="btnNew">↺ Phòng mới</button>
+        <button class="btn" id="btnHistory" title="Các phòng đã thảo luận">🗂 Lịch sử</button>
+      </div>
+    </section>
+
+    <section class="panel chat">
+      <div class="chat-top">
+        <span class="tag">Biên bản trực tiếp</span>
+        <span class="status" id="status"></span>
+      </div>
+      <div class="feed" id="feed"></div>
+      <div class="composer">
+        <div class="mention-bar" id="mentionBar"></div>
+        <div class="row">
+          <textarea id="input" rows="1" placeholder="Nhập chủ đề để bắt đầu thảo luận…"></textarea>
+          <button class="btn go" id="btnSend">✓ Gửi</button>
+        </div>
+        <div class="hint">Enter gửi · Shift+Enter xuống dòng · gõ @Tên để hỏi riêng · chen vào bất cứ lúc nào, kể cả khi các AI đang nói</div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="side">
+    <section class="panel">
+      <div class="eyebrow">Mặt bằng phòng họp</div>
+      <h2>Ai đang nói?</h2>
+      <div class="room" id="room"></div>
+      <div class="legend">
+        <span style="--c: var(--blue)">Đang nói</span>
+        <span style="--c: var(--green)">Sẵn sàng</span>
+        <span style="--c: var(--red)">Lỗi</span>
+        <span style="--c: var(--gray)">Vắng</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="eyebrow">Đồng đội trong phòng</div>
+      <h2>Thành viên</h2>
+      <div id="mates"></div>
+      <div style="margin-top:12px;display:grid;gap:10px">
+        <button class="btn" id="btnSettings" style="width:100%;justify-content:center">⚙ Cài đặt & thành viên</button>
+        <button class="btn" id="btnWizard" style="width:100%;justify-content:center">🔌 Kết nối AI (hướng dẫn)</button>
+        <button class="btn go" id="btnInstall" style="width:100%;justify-content:center;display:none">📲 Cài Tun Ideas lên máy</button>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="modal-bg" id="settingsModal">
+  <div class="modal panel">
+    <header><h2>Cài đặt phòng họp</h2><button class="btn" data-close>✕</button></header>
+    <div class="content">
+      <h3>1. API key</h3>
+      <p class="help" id="keyHelp">Key chỉ lưu trên thiết bị của bạn.</p>
+      <div class="grid2">
+        <div class="field"><label>Gemini API key (miễn phí) — <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></label><input id="kGemini" type="password" placeholder="AIza..."></div>
+        <div class="field"><label>OpenRouter API key (có model free) — <a href="https://openrouter.ai/settings/keys" target="_blank">openrouter.ai/settings/keys</a></label><input id="kOpenrouter" type="password" placeholder="sk-or-..."></div>
+        <div class="field"><label>Anthropic API key (tuỳ chọn, trả phí)</label><input id="kAnthropic" type="password" placeholder="sk-ant-..."></div>
+        <div class="field"><label>OpenAI API key (tuỳ chọn, trả phí)</label><input id="kOpenai" type="password" placeholder="sk-..."></div>
+      </div>
+
+      <h3>2. Cách thảo luận</h3>
+      <div class="grid4">
+        <div class="field"><label>Chế độ</label><select id="sMode"><option value="fixed">Số vòng cố định</option><option value="consensus">Đến khi đồng thuận (bỏ phiếu)</option></select></div>
+        <div class="field"><label>Số vòng (chế độ cố định)</label><input id="sRounds" type="number" min="1" max="30"></div>
+        <div class="field"><label>Trần tối đa (chế độ đồng thuận)</label><input id="sCap" type="number" min="2" max="30"></div>
+        <div class="field"><label>&nbsp;</label><span class="help" style="margin:0">Đồng thuận: mỗi AI bỏ phiếu + nêu lý do; phòng tự dừng khi tất cả cùng ủng hộ một phương án.</span></div>
+      </div>
+      <div class="grid4">
+        <div class="field"><label>Số từ tối đa / lượt</label><input id="sWords" type="number" min="30" max="1000" step="10"></div>
+        <div class="field"><label>Ngôn ngữ</label><input id="sLang"></div>
+        <div class="field"><label>Nhớ bao nhiêu tin gần nhất</label><input id="sContext" type="number" min="5" max="200"></div>
+        <div class="field"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Ai làm người tổng kết</label><select id="sSummarizer"></select></div>
+        <div class="field"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="sShuffle"> Đảo thứ tự nói mỗi vòng</label></div>
+      </div>
+
+      <h3>3. Thành viên</h3>
+      <p class="help">
+        Claude (gói Pro): model sonnet (tiết kiệm quota), opus hoặc haiku. Gemini: gemini-flash-latest, gemini-3.1-flash-lite.
+        OpenRouter: model đuôi :free là miễn phí (~50 lượt/ngày nếu chưa nạp tiền); openrouter/free để OpenRouter tự chọn.
+        Bấm vào ô Model để xem gợi ý.
+      </p>
+      <div id="memberEditor"></div>
+      <button class="btn" id="btnAddMember">＋ Thêm thành viên</button>
+      <datalist id="dlClaude"><option value="sonnet"><option value="opus"><option value="haiku"></datalist>
+      <datalist id="dlGemini"></datalist>
+      <datalist id="dlOpenrouter"></datalist>
+      <datalist id="dlAnthropic"><option value="claude-sonnet-5-5"><option value="claude-haiku-5-5"><option value="claude-opus-5-5"></datalist>
+      <datalist id="dlOpenai"><option value="gpt-5.5"><option value="chat-latest"></datalist>
+    </div>
+    <footer>
+      <button class="btn" data-close>Huỷ</button>
+      <button class="btn go" id="btnSaveSettings">✓ Lưu</button>
+    </footer>
+  </div>
+</div>
+
+<div class="modal-bg" id="wizModal">
+  <div class="modal panel wiz">
+    <header><div class="steps" id="wizSteps"></div><span class="eyebrow" id="wizStepLabel"></span></header>
+    <div class="content" id="wizBody"></div>
+    <footer id="wizFoot"></footer>
+  </div>
+</div>
+
+<div class="modal-bg" id="histModal">
+  <div class="modal panel" style="width:min(640px,100%)">
+    <header><h2>Lịch sử phòng họp</h2><button class="btn" data-close-hist>✕</button></header>
+    <div class="content" id="histBody"></div>
+    <footer><span class="help" style="margin:0 auto 0 0">Lưu tối đa 30 phòng gần nhất, trên thiết bị này.</span><button class="btn" data-close-hist>Đóng</button></footer>
+  </div>
+</div>
+
+<script>
+// ================= Nhân vật pixel =================
+// M = màu chính của thành viên, D = đậm hơn, L = sáng, K = mực, W = trắng, Y = vàng, P = hồng má
+const SPRITES = {
+  cao: { label: 'Cáo cam', rows: [
+    '.D........D.',
+    '.MD......DM.',
+    '.MMMMMMMMMM.',
+    'MMMMMMMMMMMM',
+    'MMWKMMMMWKMM',
+    'MMKKMMMMKKMM',
+    'MPMMMDDMMMPM',
+    'MMMMMMMMMMMM',
+    '.MMLLLLLLMM.',
+    '.MMLLLLLLMM.',
+    '..MM....MM..',
+    '..DD....DD..'] },
+  sao: { label: 'Sao lấp lánh', rows: [
+    '.....MM.....',
+    '.....MM.....',
+    '....MMMM....',
+    'MMMMMMMMMMMM',
+    '.MMWKMMWKMM.',
+    '..MKKMMKKM..',
+    '..MMMMMMMM..',
+    '..MMMDDMMM..',
+    '.MMMM..MMMM.',
+    '.MMM....MMM.',
+    'MM........MM',
+    'D..........D'] },
+  robot: { label: 'Rô-bốt', rows: [
+    '.....YY.....',
+    '.....KK.....',
+    '..DDDDDDDD..',
+    '..DLLLLLLD..',
+    '..DLKLLKLD..',
+    '..DLLLLLLD..',
+    '..DLKKKKLD..',
+    '..DDDDDDDD..',
+    '.MMMMMMMMMM.',
+    'DMMYMMMMMMMD',
+    '.MM......MM.',
+    '.DD......DD.'] },
+  ma: { label: 'Bóng ma', rows: [
+    '....MMMM....',
+    '..MMMMMMMM..',
+    '.MMMMMMMMMM.',
+    '.MMWKMMWKMM.',
+    'MMMKKMMKKMMM',
+    'MPMMMMMMMMPM',
+    'MMMMMDDMMMMM',
+    'MMMMMMMMMMMM',
+    'MMMMMMMMMMMM',
+    'MMMMMMMMMMMM',
+    'MM.MMM.MMM.M',
+    'M...M...M...'] },
+  meo: { label: 'Mèo', rows: [
+    '.M........M.',
+    '.MM......MM.',
+    '.MMMMMMMMMM.',
+    'MMMMMMMMMMMM',
+    'MMKMMMMMMKMM',
+    'MMKMMMMMMKMM',
+    'MPMMMDDMMMPM',
+    '.MMMMMMMMMM.',
+    '..MLLLLLLM..',
+    '..MLLLLLLM..',
+    '..MM.MM.MM..',
+    '..DD.DD.DD..'] },
+  nam: { label: 'Nấm', rows: [
+    '....MMMM....',
+    '..MMWWMMMM..',
+    '.MMWWMMMWWM.',
+    'MMMMMMMMWWMM',
+    'MMWWMMMMMMMM',
+    'DDDDDDDDDDDD',
+    '...LLLLLL...',
+    '...LKLLKL...',
+    '...LPLLPL...',
+    '...LLLLLL...',
+    '....LLLL....',
+    '....KKKK....'] },
+  cu: { label: 'Cú mèo', rows: [
+    '.D........D.',
+    '.DM......MD.',
+    '.MMMMMMMMMM.',
+    'MLLLMMMMLLLM',
+    'MLKKLMMLKKLM',
+    'MLKKLMMLKKLM',
+    'MMLLMYYMLLMM',
+    'MMMMMYYMMMMM',
+    'MDMLLLLLLMDM',
+    'MDMLLLLLLMDM',
+    '.MMMMMMMMMM.',
+    '..YY....YY..'] },
+  slime: { label: 'Thạch', rows: [
+    '............',
+    '.....MM.....',
+    '....MMMM....',
+    '...MMWMMM...',
+    '..MMWMMMMM..',
+    '.MMMMMMMMMM.',
+    '.MMKMMMMKMM.',
+    'MMMKMMMMKMMM',
+    'MPMMMDDMMMPM',
+    'MMMMMMMMMMMM',
+    'DMMMMMMMMMMD',
+    '.DDDDDDDDDD.'] },
+};
+const LOGO_ROWS = [
+  '....KKKK....',
+  '...KYYYYK...',
+  '..KYWWYYYK..',
+  '..KYWYYYYK..',
+  '..KYYYYYYK..',
+  '..KYYYYYYK..',
+  '...KYYYYK...',
+  '....KYYK....',
+  '....KGGK....',
+  '....KGGK....',
+  '.....KK.....',
+  '............'];
+function logoSVG() {
+  const pal = { K: '#2a2723', Y: '#e9c24a', W: '#ffffff', G: '#9a9285' };
+  let r = '';
+  LOGO_ROWS.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) r += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${pal[ch]}"/>`; }));
+  return `<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
+}
+const AVATAR_DEFAULTS = { 'claude-code': 'cao', anthropic: 'cao', gemini: 'sao', openai: 'robot', openrouter: 'robot', custom: 'slime' };
+
+function shade(hex, amt) {
+  let h = (hex || '#888888').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const f = v => Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt)));
+  return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+function spriteSVG(key, color) {
+  const s = SPRITES[key] || SPRITES.slime;
+  const pal = { M: color, D: shade(color, -0.35), L: '#f6eedb', K: '#2a2723', W: '#ffffff', Y: '#e9c24a', P: shade(color, 0.45) };
+  let rects = '';
+  s.rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) rects += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${pal[ch]}"/>`; }));
+  return `<svg viewBox="0 0 12 12" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
+}
+function avatarOf(m) { return m.avatar || AVATAR_DEFAULTS[m.provider] || 'slime'; }
+
+// ================= Cá tính mẫu =================
+const PERSONA_PRESETS = [
+  { group: 'Lập trường', name: 'Người phản biện', text: 'Người phản biện ("luật sư của quỷ"): chủ động tìm điểm yếu trong lập luận của người khác, phản đối số đông khi thấy có lý do, và luôn đưa ra phương án thay thế.' },
+  { group: 'Lập trường', name: 'Người lạc quan', text: 'Người lạc quan: nhìn thấy cơ hội trước rủi ro, khích lệ ý tưởng mới, tìm cách biến khó khăn thành lợi thế — nhưng vẫn nêu lý do cụ thể cho sự lạc quan.' },
+  { group: 'Lập trường', name: 'Người bi quan', text: 'Người bi quan có lý lẽ: luôn hình dung kịch bản xấu nhất, chỉ ra điều có thể sai, hỏi "nếu thất bại thì mất gì?".' },
+  { group: 'Lập trường', name: 'Người thận trọng', text: 'Người thận trọng, chuộng rủi ro thấp: ưu tiên phương án an toàn, thử nghiệm nhỏ trước khi làm lớn, luôn tính đường lui.' },
+  { group: 'Lập trường', name: 'Người liều lĩnh', text: 'Người chấp nhận rủi ro: tin rằng cơ hội lớn đòi hỏi đặt cược lớn, thúc giục hành động nhanh, chê các phương án quá an toàn.' },
+  { group: 'Lập trường', name: 'Người hoà giải', text: 'Người hoà giải: tìm điểm chung giữa các ý kiến trái ngược, tóm lại chỗ mọi người đang thực sự bất đồng, đề xuất phương án dung hoà.' },
+  { group: 'Lập trường', name: 'Người đặt câu hỏi', text: 'Người đặt câu hỏi kiểu Socrates: hỏi nhiều hơn khẳng định, buộc người khác làm rõ giả định và định nghĩa, đào sâu bằng câu hỏi "tại sao?".' },
+
+  { group: 'Cách suy nghĩ', name: 'Dựa trên dữ liệu', text: 'Người dựa trên dữ liệu: chỉ tin con số, luôn hỏi số liệu ở đâu ra, tự đưa ước tính định lượng khi thiếu dữ liệu.' },
+  { group: 'Cách suy nghĩ', name: 'Thực tế, triển khai', text: 'Người thực tế: quan tâm cách triển khai — ai làm, làm thế nào, mất bao lâu, tốn bao nhiêu. Gạt bỏ ý tưởng hay mà không làm được.' },
+  { group: 'Cách suy nghĩ', name: 'Tầm nhìn dài hạn', text: 'Người có tầm nhìn dài hạn: nhìn vấn đề trong 5–10 năm tới, chú ý xu hướng lớn và hệ quả bậc hai mà người khác bỏ qua.' },
+  { group: 'Cách suy nghĩ', name: 'Sáng tạo, táo bạo', text: 'Người sáng tạo: đề xuất ý tưởng táo bạo, khác thường, hay mượn ví dụ từ các ngành khác và dùng phép so sánh.' },
+  { group: 'Cách suy nghĩ', name: 'Tư duy từ gốc rễ', text: 'Người tư duy từ gốc rễ (first principles): bóc vấn đề đến tận cùng, đặt lại câu hỏi gốc, không chấp nhận "xưa nay vẫn làm vậy".' },
+  { group: 'Cách suy nghĩ', name: 'Đạo đức & xã hội', text: 'Người quan tâm đạo đức và tác động xã hội: hỏi ai được lợi, ai chịu thiệt, điều này có công bằng và bền vững không.' },
+
+  { group: 'Chuyên môn', name: 'Nhà đầu tư khó tính', text: 'Nhà đầu tư thiên thần đã xem hàng trăm dự án thất bại. Hoài nghi, thẳng thắn, chỉ tin con số. Luôn hỏi: thu hồi vốn bao lâu, rủi ro lớn nhất là gì, đối thủ là ai.' },
+  { group: 'Chuyên môn', name: 'Kế toán / CFO', text: 'Giám đốc tài chính: soi dòng tiền, chi phí ẩn, biên lợi nhuận và điểm hoà vốn. Nghi ngờ mọi dự báo doanh thu quá đẹp.' },
+  { group: 'Chuyên môn', name: 'Chuyên gia marketing', text: 'Chuyên gia marketing: nghĩ theo khách hàng mục tiêu, thông điệp, kênh tiếp cận và thương hiệu. Hay hỏi "khách hàng sẽ nghe về điều này ở đâu?".' },
+  { group: 'Chuyên môn', name: 'Người bán hàng', text: 'Trưởng phòng kinh doanh lâu năm: thực chiến, quan tâm cách chốt đơn, phản đối thường gặp của khách và giá bán thực tế.' },
+  { group: 'Chuyên môn', name: 'Luật sư', text: 'Luật sư cẩn trọng: chỉ ra rủi ro pháp lý, hợp đồng, giấy phép và trách nhiệm. Diễn đạt chặt chẽ, phân biệt rõ "chắc chắn" và "có thể".' },
+  { group: 'Chuyên môn', name: 'Kỹ sư vận hành', text: 'Kỹ sư vận hành thực dụng: quan tâm quy trình, nguồn lực, điểm nghẽn và những thứ có thể hỏng. Mỗi ý kiến đều được hỏi "vận hành hằng ngày thế nào?".' },
+  { group: 'Chuyên môn', name: 'Nhà thiết kế', text: 'Nhà thiết kế trải nghiệm: đặt người dùng vào trung tâm, quan tâm cảm xúc, sự đơn giản và cái đẹp. Hay hỏi "người dùng cảm thấy thế nào?".' },
+  { group: 'Chuyên môn', name: 'Giáo viên', text: 'Giáo viên giàu kinh nghiệm: giải thích dễ hiểu, dùng ví dụ đời thường, quan tâm việc mọi người có thực sự hiểu và áp dụng được không.' },
+
+  { group: 'Góc nhìn người ngoài', name: 'Khách hàng bình thường', text: 'Một người tiêu dùng 30 tuổi ở Hà Nội, thu nhập trung bình, không rành chuyên môn. Nói bằng ngôn ngữ đời thường, quan tâm giá cả và sự tiện lợi.' },
+  { group: 'Góc nhìn người ngoài', name: 'Khách hàng khó tính', text: 'Khách hàng khó tính, đã từng bị thất vọng: soi từng chi tiết, so sánh với đối thủ, không dễ bị thuyết phục bởi lời quảng cáo.' },
+  { group: 'Góc nhìn người ngoài', name: 'Người ngoài ngành', text: 'Người hoàn toàn ngoài ngành: đặt câu hỏi "ngây thơ" nhưng sắc, không chấp nhận thuật ngữ khó hiểu, nhìn vấn đề bằng con mắt mới.' },
+  { group: 'Góc nhìn người ngoài', name: 'Người trẻ Gen Z', text: 'Người trẻ Gen Z: nhạy với xu hướng mạng xã hội, coi trọng trải nghiệm và giá trị cá nhân, nói chuyện tự nhiên, hơi lém lỉnh.' },
+  { group: 'Góc nhìn người ngoài', name: 'Bậc phụ huynh', text: 'Một bậc phụ huynh ngoài 40: thực tế, coi trọng sự ổn định, an toàn và chi phí cho gia đình; hay hỏi "có đáng tiền không?".' },
+
+  { group: 'Giọng điệu', name: 'Thẳng thắn, gay gắt', text: 'Người cực kỳ thẳng thắn: nói thẳng vào vấn đề, không vòng vo, không khen xã giao, sẵn sàng nói "ý này sai" kèm lý do.' },
+  { group: 'Giọng điệu', name: 'Hài hước, châm biếm', text: 'Người hài hước: dùng sự dí dỏm và châm biếm nhẹ để chỉ ra điểm vô lý, nhưng luôn có ý kiến nghiêm túc đằng sau câu đùa.' },
+  { group: 'Giọng điệu', name: 'Điềm đạm, học thuật', text: 'Người điềm đạm kiểu học giả: lịch sự, chặt chẽ, dẫn khái niệm và mô hình lý thuyết, phân biệt rõ dữ kiện và quan điểm.' },
+  { group: 'Giọng điệu', name: 'Người kể chuyện', text: 'Người kể chuyện: diễn đạt quan điểm qua ví dụ, câu chuyện và tình huống đời thường, khiến ý kiến dễ nhớ.' },
+];
+const PRESET_GROUPS = [...new Set(PERSONA_PRESETS.map(p => p.group))];
+const HABITS = [
+  { short: 'Kết bằng câu hỏi', text: 'Luôn kết thúc lượt nói bằng một câu hỏi cho một thành viên khác.' },
+  { short: 'Luôn có con số', text: 'Mỗi lượt phải đưa ra ít nhất một con số hoặc ước tính cụ thể.' },
+  { short: 'Chỉ ra rủi ro', text: 'Luôn chỉ ra một rủi ro mà người khác bỏ qua.' },
+  { short: 'Không đồng ý hoàn toàn', text: 'Không bao giờ đồng ý hoàn toàn với ai — luôn tìm điểm cần bổ sung hoặc phản bác.' },
+  { short: 'Đưa phương án thay thế', text: 'Mỗi khi phản bác, phải đề xuất một phương án thay thế.' },
+  { short: 'Có ví dụ thực tế', text: 'Mỗi lượt có ít nhất một ví dụ thực tế hoặc tình huống cụ thể.' },
+  { short: 'Rất ngắn gọn', text: 'Nói cực kỳ ngắn gọn, tối đa 3–4 câu.' },
+];
+
+// ================= Lớp kết nối =================
+// Bản Windows: gọi qua máy chủ nội bộ (có Claude Code). Bản web/Android: gọi thẳng các API từ trình duyệt.
+const api = (() => {
+  const LS_CFG = 'tun.config';
+  let mode = 'browser', caps = { claudeCode: false, desktop: false };
+  const DEFAULTS = {
+    onboarded: false,
+    keys: { gemini: '', openrouter: '', anthropic: '', openai: '' },
+    settings: { roundsPerTurn: 2, mode: 'fixed', consensusCap: 12, maxWords: 150, language: 'tiếng Việt', shuffle: false, contextLimit: 30, summarizerId: 'gemini' },
+    members: [
+      { id: 'claude', avatar: 'cao', name: 'Claude', provider: 'anthropic', model: 'claude-sonnet-5-5', color: '#D97757', enabled: false,
+        persona: 'Người phân tích cẩn trọng: cân nhắc nhiều mặt, chỉ ra rủi ro và giả định ngầm.' },
+      { id: 'gemini', avatar: 'sao', name: 'Gemini', provider: 'gemini', model: 'gemini-flash-latest', color: '#4285F4', enabled: true,
+        persona: 'Người thực tế, thích dữ liệu và ví dụ cụ thể; hay hỏi "làm thế nào để triển khai?".' },
+      { id: 'gpt', avatar: 'robot', name: 'GPT', provider: 'openrouter', model: 'openai/gpt-oss-120b:free', color: '#10A37F', enabled: true,
+        persona: 'Người phản biện: chủ động tìm điểm yếu trong lập luận của người khác và đưa phương án thay thế.' },
+      { id: 'guest', avatar: 'ma', name: 'Khách mời', provider: 'openrouter', model: 'openrouter/free', color: '#8B5CF6', enabled: false,
+        persona: 'Người ngoài ngành, nhìn vấn đề bằng góc nhìn mới mẻ, đặt câu hỏi ngây thơ nhưng sắc.' },
+    ],
+  };
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  function loadLocal() {
+    const d = JSON.parse(JSON.stringify(DEFAULTS));
+    const s = lsGet(LS_CFG, null);
+    if (!s) return d;
+    return { onboarded: !!s.onboarded, keys: { ...d.keys, ...(s.keys || {}) }, settings: { ...d.settings, ...(s.settings || {}) },
+      members: Array.isArray(s.members) && s.members.length ? s.members : d.members };
+  }
+  async function init() {
+    try {
+      const r = await fetch('/api/config', { cache: 'no-store' });
+      if (r.ok && (r.headers.get('content-type') || '').includes('application/json')) {
+        const c = await r.json();
+        if (c && c.capabilities) { mode = 'server'; caps = c.capabilities; delete c.capabilities; return c; }
+      }
+    } catch {}
+    mode = 'browser';
+    return loadLocal();
+  }
+  async function saveConfig(partial) {
+    if (mode === 'server') {
+      await fetch('/api/config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(partial) });
+      return;
+    }
+    const cur = loadLocal();
+    if (partial.keys) cur.keys = { ...cur.keys, ...partial.keys };
+    if (partial.settings) cur.settings = { ...cur.settings, ...partial.settings };
+    if (Array.isArray(partial.members)) cur.members = partial.members;
+    if (typeof partial.onboarded === 'boolean') cur.onboarded = partial.onboarded;
+    lsSet(LS_CFG, cur);
+  }
+
+  // ----- gọi thẳng từ trình duyệt -----
+  async function postJSON(url, headers, body, signal) {
+    let res;
+    try {
+      res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body), signal });
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      throw new Error(`Không kết nối được tới ${new URL(url).host}. Kiểm tra mạng Internet rồi thử lại.`);
+    }
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch { data = null; }
+    if (!res.ok) {
+      const raw = (data && (data.error?.message || data.error?.metadata?.raw || data.message)) || text.slice(0, 300);
+      let hint = '';
+      if (res.status === 401 || res.status === 403) hint = ' → Kiểm tra lại API key.';
+      else if (res.status === 429) hint = ' → Hết lượt miễn phí hoặc gọi quá nhanh. Chờ một lúc, giảm số vòng, hoặc đổi model.';
+      else if (res.status === 404) hint = ' → Tên model không đúng hoặc model đã ngừng. Chọn model khác trong Cài đặt.';
+      if (/data policy/i.test(raw)) hint = ' → Vào openrouter.ai/settings/privacy, bật "Allow free endpoints that train on request data".';
+      throw new Error(`Lỗi ${res.status}: ${raw}${hint}`);
+    }
+    return data;
+  }
+  async function viaOpenAI({ baseUrl, model, system, prompt, key, extraHeaders, keyName }, signal) {
+    if (!key) throw new Error(`Chưa có ${keyName || 'API key'}. Bấm "🔌 Kết nối AI" để thêm.`);
+    const data = await postJSON(baseUrl.replace(/\/$/, '') + '/chat/completions', { authorization: 'Bearer ' + key, ...(extraHeaders || {}) },
+      { model, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }, signal);
+    const text = (data.choices?.[0]?.message?.content || '').trim();
+    if (!text) throw new Error('Model trả về câu trả lời trống. Thử lại hoặc đổi model.');
+    return text;
+  }
+  async function speakBrowser(member, system, prompt, signal) {
+    const k = loadLocal().keys;
+    if (lsGet('tun.mock', false)) return mockReply(member, prompt, system);
+    switch (member.provider) {
+      case 'claude-code':
+        throw new Error('Claude qua gói Claude (Claude Code) chỉ có trên bản Windows. Trên web/điện thoại, đổi Claude sang "Anthropic API" và dùng API key.');
+      case 'gemini': {
+        if (!k.gemini) throw new Error('Chưa có Gemini API key. Bấm "🔌 Kết nối AI" để thêm.');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(member.model)}:generateContent`;
+        const data = await postJSON(url, { 'x-goog-api-key': k.gemini }, {
+          systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        }, signal);
+        const cand = data.candidates?.[0];
+        const text = (cand?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('').trim();
+        if (!text) throw new Error('Gemini không trả lời (' + (cand?.finishReason || data.promptFeedback?.blockReason || 'trống') + ').');
+        return text;
+      }
+      case 'openrouter':
+        return viaOpenAI({ baseUrl: 'https://openrouter.ai/api/v1', model: member.model, system, prompt, key: k.openrouter, keyName: 'OpenRouter API key',
+          extraHeaders: { 'HTTP-Referer': location.origin, 'X-Title': 'Tun Ideas' } }, signal);
+      case 'anthropic': {
+        if (!k.anthropic) throw new Error('Chưa có Anthropic API key. Bấm "🔌 Kết nối AI" để thêm.');
+        const data = await postJSON('https://api.anthropic.com/v1/messages', {
+          'x-api-key': k.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true',
+        }, { model: member.model, max_tokens: 2048, system, messages: [{ role: 'user', content: prompt }] }, signal);
+        return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+      }
+      case 'openai':
+        return viaOpenAI({ baseUrl: 'https://api.openai.com/v1', model: member.model, system, prompt, key: k.openai, keyName: 'OpenAI API key' }, signal);
+      case 'custom':
+        if (!member.baseUrl) throw new Error('Thành viên kiểu "Tuỳ chỉnh" cần điền Base URL.');
+        return viaOpenAI({ baseUrl: member.baseUrl, model: member.model, system, prompt, key: member.apiKey }, signal);
+      default: throw new Error('Không rõ nhà cung cấp: ' + member.provider);
+    }
+  }
+  async function mockReply(member, prompt, system) {
+    await new Promise(r => setTimeout(r, 250 + Math.random() * 300));
+    if (/CHẾ ĐỘ BỎ PHIẾU/.test(system)) return `Ý kiến thử nghiệm.\n\nPHIẾU: ${member.name}\nLÝ DO: Thử nghiệm.`;
+    if (/nghe rõ không/.test(prompt)) return `Mình nghe rõ, ${member.name} sẵn sàng!`;
+    return `(${member.name}) Ý kiến thử nghiệm: nên bắt đầu từ một thử nghiệm nhỏ.`;
+  }
+
+  async function speak(member, system, prompt, signal) {
+    if (mode === 'server') {
+      const r = await fetch('/api/speak', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ member, system, prompt }), signal });
+      return r.json();
+    }
+    try { return { text: await speakBrowser(member, system, prompt, signal) }; }
+    catch (e) { if (e.name === 'AbortError') throw e; return { error: e.message || String(e) }; }
+  }
+  async function models() {
+    if (mode === 'server') return (await fetch('/api/models')).json();
+    const out = { openrouter: [], gemini: [] };
+    const k = loadLocal().keys;
+    await Promise.all([
+      fetch('https://openrouter.ai/api/v1/models').then(r => r.json()).then(d => {
+        out.openrouter = (d.data || []).filter(m => m.id.endsWith(':free') || m.id === 'openrouter/free').map(m => ({ id: m.id, name: m.name })).sort((a, b) => a.id.localeCompare(b.id));
+      }).catch(() => {}),
+      k.gemini ? fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': k.gemini } }).then(r => r.json()).then(d => {
+        out.gemini = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => ({ id: m.name.replace(/^models\//, ''), name: m.displayName }));
+      }).catch(() => {}) : null,
+    ]);
+    return out;
+  }
+  async function claudeStatus() {
+    if (mode !== 'server') return { installed: false, unsupported: true };
+    try { return await (await fetch('/api/claude-status')).json(); } catch { return { installed: false }; }
+  }
+  return { init, saveConfig, speak, models, claudeStatus, get mode() { return mode; }, get caps() { return caps; } };
+})();
+
+// ================= Trạng thái =================
+const PROVIDERS = {
+  'claude-code': { label: 'Claude (gói Pro, qua Claude Code)', dl: 'dlClaude' },
+  'gemini':      { label: 'Gemini (Google AI Studio)', dl: 'dlGemini' },
+  'openrouter':  { label: 'OpenRouter (nhiều model, có free)', dl: 'dlOpenrouter' },
+  'anthropic':   { label: 'Anthropic API (trả phí)', dl: 'dlAnthropic' },
+  'openai':      { label: 'OpenAI API (trả phí)', dl: 'dlOpenai' },
+  'custom':      { label: 'Tuỳ chỉnh (OpenAI-compatible)', dl: '' },
+};
+
+let config = null;
+let room = loadRoom();
+let running = false, stopRequested = false, currentCtrl = null, busyId = null;
+let errorIds = new Set();
+let progress = { label: 'Chờ chủ đề', done: 0, total: 0 };
+
+const $ = id => document.getElementById(id);
+const feed = $('feed');
+
+function loadRoom() {
+  try { const r = JSON.parse(localStorage.getItem('tun.room') || localStorage.getItem('phongchat.room')); if (r && Array.isArray(r.messages)) return r; } catch {}
+  return { topic: '', messages: [] };
+}
+function saveRoom() { try { localStorage.setItem('tun.room', JSON.stringify(room)); } catch {} }
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem('tun.history') || localStorage.getItem('phongchat.history') || '[]'); } catch { return []; }
+}
+function saveHistory(h) { try { localStorage.setItem('tun.history', JSON.stringify(h.slice(0, 30))); } catch {} }
+
+// ================= Tiện ích =================
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function inline(s) {
+  return s.replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+          .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>')
+          .replace(/(^|\s)@([\p{L}\p{N}_-]+)/gu, '$1<b>@$2</b>');
+}
+function md(text) {
+  const lines = esc(text).split(/\r?\n/);
+  let html = '', list = null, para = [];
+  const flushP = () => { if (para.length) { html += '<p>' + inline(para.join('<br>')) + '</p>'; para = []; } };
+  const flushL = () => { if (list) { html += `<${list.t}>` + list.items.map(i => '<li>' + inline(i) + '</li>').join('') + `</${list.t}>`; list = null; } };
+  for (const raw of lines) {
+    const l = raw.trim(); let m;
+    if ((m = l.match(/^[-*•]\s+(.*)/))) { flushP(); if (!list || list.t !== 'ul') { flushL(); list = { t: 'ul', items: [] }; } list.items.push(m[1]); }
+    else if ((m = l.match(/^\d+[.)]\s+(.*)/))) { flushP(); if (!list || list.t !== 'ol') { flushL(); list = { t: 'ol', items: [] }; } list.items.push(m[1]); }
+    else if (!l) { flushP(); flushL(); }
+    else { flushL(); para.push(l.replace(/^#{1,6}\s+/, '')); }
+  }
+  flushP(); flushL();
+  return html;
+}
+function time(ts) { return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }); }
+function memberById(id) { return config.members.find(m => m.id === id); }
+function enabledMembers() { return config.members.filter(m => m.enabled); }
+function setStatus(t) { $('status').textContent = t || ''; }
+
+// ================= Cột phải: phòng họp + thành viên =================
+function renderRoom() {
+  const mems = enabledMembers();
+  const W = $('room').clientWidth || 300;
+  const topN = Math.ceil(mems.length / 2), botN = mems.length - topN;
+  const tableL = W * 0.18, tableR = W * 0.82;
+  const xs = n => Array.from({ length: n }, (_, i) => tableL + (tableR - tableL) * (i + 1) / (n + 1));
+  const tx = xs(topN), bx = xs(botN);
+  const lastSpeaker = [...room.messages].reverse().find(m => m.role === 'ai');
+  const votes = latestVotes();
+  const pct = progress.total ? Math.round(progress.done / progress.total * 100) : (room.topic ? 100 : 0);
+  let html = `<div class="wall">
+      <div class="win" style="left:12px"><i style="left:6px;top:5px"></i><i style="left:22px;top:12px"></i></div>
+      <div class="win" style="right:12px"><i style="left:5px;top:12px"></i><i style="left:20px;top:4px"></i></div>
+      <div class="sign">${esc(progress.label)}<div class="bar"><b style="width:${pct}%"></b></div></div>
+    </div>
+    <div class="plant" style="left:8px;top:236px"></div><div class="plant" style="right:8px;top:236px"></div>
+    <div class="table">${[0.2, 0.45, 0.7].map(p => `<div class="paper" style="left:${p * 100}%"></div>`).join('')}</div>
+    <div class="seat chair-b" style="left:${W * 0.08}px;top:116px"><div class="owner-box">B</div><div class="nm">Bạn</div></div>`;
+  mems.forEach((m, i) => {
+    const top = i < topN;
+    const x = top ? tx[i] : bx[i - topN];
+    const y = top ? 40 : 164;
+    const talking = busyId === m.id;
+    const cls = talking ? 'talking' : 'idle';
+    const say = talking ? '…' : '';
+    const nmColor = errorIds.has(m.id) ? 'var(--red)' : m.color;
+    html += `<div class="seat ${cls}" style="left:${x}px;top:${y}px" title="${esc(m.name)}">
+      <div class="spr"><span class="say">${say}</span>${spriteSVG(avatarOf(m), m.color)}</div>
+      <div class="nm" style="color:${esc(nmColor)}">${esc(m.name)}${lastSpeaker && lastSpeaker.memberId === m.id && !talking ? ' ✓' : ''}</div>
+      ${votes[m.id] ? `<div class="vt">→ ${esc(memberById(votes[m.id])?.name || "?")}</div>` : ''}</div>`;
+  });
+  $('room').innerHTML = html;
+}
+
+function mateStatus(m) {
+  if (!m.enabled) return ['Vắng mặt', 'var(--gray)'];
+  if (busyId === m.id) return ['Đang nói', 'var(--blue)'];
+  if (errorIds.has(m.id)) return ['Lỗi kết nối', 'var(--red)'];
+  if (running) return ['Đang nghe', 'var(--green)'];
+  return ['Sẵn sàng', 'var(--green)'];
+}
+function renderMates() {
+  $('mates').innerHTML = config.members.map(m => {
+    const [st, c] = mateStatus(m);
+    return `<div class="mate ${m.enabled ? '' : 'off'}">
+      <div class="spr">${spriteSVG(avatarOf(m), m.color)}</div>
+      <div class="info"><div class="nm" style="color:${esc(m.color)}">${esc(m.name)} <span style="color:${c};font-size:12px">· ${st}</span></div>
+      <div class="sub">${latestVotes()[m.id] ? '🗳 Ủng hộ: ' + esc(voteLabel(latestVotes()[m.id], m.id)) : esc(m.model)}</div></div>
+      <label class="toggle ${m.enabled ? 'on' : ''}" title="Cho vào / mời ra"><input type="checkbox" data-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''}><i></i></label>
+    </div>`;
+  }).join('');
+  $('mentionBar').innerHTML = enabledMembers().length
+    ? '<span class="eyebrow" style="margin-right:2px">Gọi tên:</span>' + enabledMembers().map(m => `<button class="chip" data-mention="${esc(m.name)}">${spriteSVG(avatarOf(m), m.color)}@${esc(m.name)}</button>`).join('')
+    : '';
+}
+function renderSide() { renderRoom(); renderMates(); }
+
+// ================= Biên bản (cột trái) =================
+function renderFeed() {
+  $('topicText').textContent = room.topic || 'Chưa có chủ đề';
+  $('input').placeholder = room.topic ? 'Nhắn vào phòng, chen ý kiến hoặc @gọi tên một AI…' : 'Nhập chủ đề để bắt đầu thảo luận…';
+  if (!room.messages.length) {
+    const cast = enabledMembers().map(m => `<div class="portrait" style="width:56px;height:56px"><span style="width:44px;height:44px;display:block">${spriteSVG(avatarOf(m), m.color)}</span></div>`).join('');
+    feed.innerHTML = `<div class="empty">
+      <div class="cast">${cast}</div>
+      <span class="tag">Phòng đang trống</span>
+      <h2>Mọi người đã ngồi vào bàn</h2>
+      <p>Gõ một chủ đề hoặc câu hỏi. Các thành viên sẽ lần lượt phát biểu, nhận xét và phản biện ý kiến của nhau.</p>
+      <div class="ex">
+        <button class="chip" data-example="Có nên mở quán cà phê nhỏ ở Hà Nội năm 2027 không?">☕ Mở quán cà phê?</button>
+        <button class="chip" data-example="AI sẽ thay thế nghề marketing trong 5 năm tới đến mức nào?">🤖 AI và nghề marketing</button>
+        <button class="chip" data-example="Cách học tiếng Trung hiệu quả nhất cho người đi làm bận rộn là gì?">📚 Học tiếng Trung</button>
+      </div></div>`;
+    return;
+  }
+  feed.innerHTML = room.messages.map(renderMsg).join('');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function renderMsg(m) {
+  if (m.role === 'notice') return `<div class="notice ${m.error ? 'err' : ''}">${esc(m.text)}</div>`;
+  if (m.role === 'round') return `<div class="round-sep"><span class="tag">${esc(m.text)}</span></div>`;
+  if (m.role === 'tally') return renderTally(m);
+  if (m.role === 'verdict') return renderVerdict(m);
+  if (m.role === 'owner') return `<div class="msg owner"><div class="owner-box">B</div><div class="body">
+      <div class="who">Chủ phòng <span class="meta">${time(m.ts)}</span></div><div class="bubble">${md(m.text)}</div></div></div>`;
+  const mem = memberById(m.memberId) || { color: m.color || '#888', name: m.name, provider: '' };
+  return `<div class="msg"><div class="portrait">${spriteSVG(avatarOf(mem), mem.color)}</div><div class="body">
+      <div class="who" style="color:${esc(mem.color)}">${esc(m.name)} <span class="meta">${esc(m.model || '')} · ${time(m.ts)}</span>${m.summary ? '<span class="tag" style="background:var(--green-d)">Tổng kết</span>' : ''}</div>
+      <div class="bubble ${m.summary ? 'summary' : ''}">${md(m.text)}${m.vote ? renderVote(m.vote) : ''}</div></div></div>`;
+}
+function voteLabel(forId, selfId) {
+  if (!forId) return '?';
+  const t = memberById(forId);
+  return (t ? t.name : forId) + (forId === selfId ? ' (chính mình)' : '');
+}
+function renderVote(v) {
+  if (!v.forId) return `<div class="vote missing"><div class="vh">🗳 Không rõ phiếu${v.raw ? ': “' + esc(v.raw) + '”' : ' (quên bỏ phiếu)'}</div></div>`;
+  const t = memberById(v.forId) || { name: v.forId, color: '#888' };
+  const prev = v.prevId ? memberById(v.prevId) : null;
+  return `<div class="vote"><div class="vh">🗳 Phiếu → ${spriteSVG(avatarOf(t), t.color)}<span style="color:${esc(t.color)}">${esc(t.name)}</span>
+    ${v.changed ? `<span class="flip">ĐỔI Ý${prev ? ' · trước: ' + esc(prev.name) : ''}</span>` : (v.prevId ? '<span class="meta" style="font-weight:400;color:var(--muted)">giữ phiếu</span>' : '')}</div>
+    ${v.reason ? `<div class="why"><b>Lý do${v.changed ? ' đổi ý' : ''}:</b> ${inline(esc(v.reason))}</div>` : `<div class="why" style="color:var(--red)">(không nêu lý do)</div>`}</div>`;
+}
+function renderTally(m) {
+  const entries = Object.entries(m.counts).sort((a, b) => b[1] - a[1]);
+  const top = entries.length ? entries[0][1] : 0;
+  return `<div class="tally"><b>${esc(m.text)}</b>${entries.map(([id, c]) => { const t = memberById(id) || { name: id, color: '#888' };
+    return `<span class="chip ${c === top ? 'lead' : ''}">${spriteSVG(avatarOf(t), t.color)}${esc(t.name)}: ${c}</span>`; }).join('')}
+    ${m.missing ? `<span style="color:var(--muted)">· ${m.missing} chưa có phiếu</span>` : ''}</div>`;
+}
+function renderVerdict(m) {
+  const t = m.winnerId ? memberById(m.winnerId) : null;
+  return `<div class="verdict ${t ? 'win' : 'lose'}">${t ? `<div class="portrait">${spriteSVG(avatarOf(t), t.color)}</div>` : '<div class="owner-box">?</div>'}
+    <div><div class="eyebrow">${t ? 'Đã đồng thuận' : 'Chưa đồng thuận'}</div><div class="big">${esc(m.text)}</div></div></div>`;
+}
+
+function addMessage(m) {
+  m.ts = m.ts || Date.now();
+  room.messages.push(m);
+  saveRoom();
+  if (room.messages.length === 1) renderFeed();
+  else { removeTyping(); feed.insertAdjacentHTML('beforeend', renderMsg(m)); if (busyId) showTyping(memberById(busyId)); feed.scrollTop = feed.scrollHeight; }
+}
+function showTyping(mem) {
+  removeTyping();
+  if (!mem) return;
+  feed.insertAdjacentHTML('beforeend', `<div class="msg typing" id="typing"><div class="portrait">${spriteSVG(avatarOf(mem), mem.color)}</div>
+    <div class="body"><div class="who" style="color:${esc(mem.color)}">${esc(mem.name)} <span class="meta">đang soạn…</span></div><div class="bubble"><i></i><i></i><i></i></div></div></div>`);
+  feed.scrollTop = feed.scrollHeight;
+}
+function removeTyping() { const t = $('typing'); if (t) t.remove(); }
+
+function updateButtons() {
+  $('btnStop').disabled = !running;
+  $('btnMore').disabled = running || !room.topic;
+  $('btnSummary').disabled = running || !room.topic;
+}
+
+// ================= Lời nhắc cho từng AI =================
+function transcriptText() {
+  const lim = Number(config.settings.contextLimit) || 30;
+  const msgs = room.messages.filter(m => m.role === 'owner' || m.role === 'ai').slice(-lim);
+  return msgs.map(m => {
+    let line = `[${m.role === 'owner' ? 'Chủ phòng' : m.name}]: ${m.text}`;
+    if (m.vote) line += `\n(PHIẾU: ${m.vote.forId ? voteLabel(m.vote.forId, m.memberId) : 'không rõ'}${m.vote.changed ? ' — ĐỔI Ý' : ''}. LÝ DO: ${m.vote.reason || 'không nêu'})`;
+    return line;
+  }).join('\n\n');
+}
+function buildSystem(mem, opts = {}) {
+  const s = config.settings;
+  const others = enabledMembers().filter(m => m.id !== mem.id).map(m => m.name).join(', ') || '(chưa có)';
+  return `Bạn là "${mem.name}", một thành viên AI trong một phòng chat nhóm. Các thành viên AI khác: ${others}. Người tạo phòng ("Chủ phòng") là con người: họ đặt chủ đề và điều phối cuộc thảo luận.
+
+Vai trò / cá tính của bạn: ${mem.persona || 'Người tham gia thẳng thắn, có chính kiến.'}
+
+Quy tắc phòng chat:
+1. Nói với tư cách ${mem.name}, ngôi thứ nhất, tự nhiên như đang nhắn tin trong nhóm. Không mở đầu bằng tên mình, không viết thay lời người khác.
+2. Nêu quan điểm riêng rõ ràng, có lý lẽ hoặc ví dụ cụ thể. Không lặp lại ý người khác đã nói.
+3. Nếu đã có thành viên khác phát biểu: nhận xét cụ thể ít nhất một ý kiến của họ, gọi đúng tên — đồng ý, phản bác hay bổ sung, và nói vì sao. Dám bất đồng khi có lý do; không khen xã giao.
+4. Nếu Chủ phòng vừa hỏi hoặc chỉ đạo điều gì, ưu tiên đáp lời Chủ phòng trước.
+5. Ngắn gọn: tối đa khoảng ${s.maxWords} từ. Có thể dùng gạch đầu dòng ngắn khi cần.
+6. Trả lời bằng ${s.language}.${opts.vote ? `
+
+7. CHẾ ĐỘ BỎ PHIẾU — phòng đang tìm MỘT phương án mà tất cả cùng đồng thuận.
+- Nếu bạn chưa có phương án, hãy đề xuất một phương án cụ thể của riêng bạn.
+- Ở CUỐI mỗi lượt nói, BẮT BUỘC thêm đúng 2 dòng theo mẫu:
+PHIẾU: <tên thành viên có phương án bạn ủng hộ — có thể là chính bạn (${mem.name})>
+LÝ DO: <1–2 câu giải thích vì sao bạn bỏ phiếu như vậy. Nếu ĐỔI PHIẾU so với lượt trước, phải nói rõ lập luận nào của ai đã thuyết phục bạn.>
+- Tên hợp lệ: ${enabledMembers().map(m => m.name).join(', ')}.
+- Chỉ đổi phiếu khi thực sự bị thuyết phục bởi lập luận cụ thể. Không đồng ý cho êm chuyện. Nếu giữ phương án riêng, hãy bảo vệ nó và tìm cách thuyết phục người khác.` : ''}`;
+}
+function buildPrompt(mem, instruction) {
+  return `CHỦ ĐỀ: ${room.topic}
+
+DIỄN BIẾN CUỘC THẢO LUẬN (cũ → mới):
+${transcriptText() || '(chưa ai phát biểu)'}
+
+${instruction}`;
+}
+function cleanReply(text, mem) {
+  let t = String(text || '').trim();
+  const name = mem.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  t = t.replace(new RegExp(`^\\**\\[?${name}\\]?\\**\\s*[:：]\\s*`, 'i'), '');
+  return t.trim();
+}
+
+// ================= Bỏ phiếu =================
+function matchMember(raw, selfId) {
+  const r = String(raw || '').replace(/[*_`"“”'.]/g, '').trim().toLowerCase();
+  if (!r) return null;
+  if (/^(chính mình|bản thân|tôi|mình|chính tôi)/.test(r)) return selfId;
+  const cands = enabledMembers().filter(m => r.includes(m.name.toLowerCase()) || m.name.toLowerCase().includes(r));
+  if (!cands.length) return null;
+  cands.sort((a, b) => b.name.length - a.name.length);
+  return cands[0].id;
+}
+function parseVote(text, mem) {
+  const lines = text.split(/\r?\n/);
+  let vi = -1, ri = -1;
+  lines.forEach((l, i) => {
+    if (/^\s*[*_]*\s*PHI[EẾ]U\s*[*_]*\s*[:：]/i.test(l)) vi = i;
+    if (/^\s*[*_]*\s*L[ÝY]\s*DO(\s*(ĐỔI|DOI)\s*[ÝY])?\s*[*_]*\s*[:：]/i.test(l)) ri = i;
+  });
+  if (vi < 0) return { body: text.trim(), vote: { forId: null, raw: '', reason: '' } };
+  const raw = lines[vi].replace(/^\s*[*_]*\s*PHI[EẾ]U\s*[*_]*\s*[:：]\s*/i, '').replace(/[*_]+$/, '').trim();
+  let reason = '';
+  if (ri >= 0) reason = [lines[ri].replace(/^\s*[*_]*\s*L[ÝY]\s*DO(\s*(ĐỔI|DOI)\s*[ÝY])?\s*[*_]*\s*[:：]\s*/i, '')].concat(ri > vi ? lines.slice(ri + 1) : []).join(' ').replace(/[*_]+/g, '').trim();
+  const cut = Math.min(vi, ri >= 0 ? ri : vi);
+  const body = lines.slice(0, cut).join('\n').replace(/[-–—_*\s]+$/, '').trim();
+  return { body, vote: { forId: matchMember(raw, mem.id), raw, reason } };
+}
+function previousVote(memId) {
+  const last = [...room.messages].reverse().find(m => m.role === 'ai' && m.memberId === memId && m.vote && m.vote.forId);
+  return last ? last.vote.forId : null;
+}
+function latestVotes() {
+  const v = {};
+  for (const m of room.messages) if (m.role === 'ai' && m.vote && m.vote.forId) v[m.memberId] = m.vote.forId;
+  return v;
+}
+function roundVotes() {
+  // phiếu bầu trong vòng gần nhất
+  let start = 0;
+  room.messages.forEach((m, i) => { if (m.role === 'round') start = i; });
+  const v = {};
+  room.messages.slice(start).forEach(m => { if (m.role === 'ai' && m.vote) v[m.memberId] = m.vote.forId; });
+  return v;
+}
+function tallyOf(votes) {
+  const counts = {}; let missing = 0;
+  for (const mem of enabledMembers()) { const f = votes[mem.id]; if (f) counts[f] = (counts[f] || 0) + 1; else missing++; }
+  return { counts, missing };
+}
+function stubbornMembers() {
+  return enabledMembers().filter(m => /không bao giờ đồng ý|phản đối số đông|luật sư của quỷ/i.test(m.persona || ''));
+}
+
+// ================= Điều phối =================
+async function speak(mem, instruction, opts = {}) {
+  busyId = mem.id; renderSide(); showTyping(mem);
+  setStatus(`${mem.name} đang suy nghĩ…`);
+  currentCtrl = new AbortController();
+  try {
+    const data = await api.speak(mem, buildSystem(mem, opts), buildPrompt(mem, instruction), currentCtrl.signal);
+    busyId = null; removeTyping();
+    if (data.error) { errorIds.add(mem.id); addMessage({ role: 'notice', error: true, text: `${mem.name} không trả lời được: ${data.error}` }); return false; }
+    errorIds.delete(mem.id);
+    let text = cleanReply(data.text, mem), vote;
+    if (opts.vote) {
+      const parsed = parseVote(text, mem);
+      text = parsed.body || text; vote = parsed.vote;
+      const prev = previousVote(mem.id);
+      vote.prevId = prev; vote.changed = !!(prev && vote.forId && prev !== vote.forId);
+    }
+    addMessage({ role: 'ai', memberId: mem.id, name: mem.name, model: mem.model, color: mem.color, text, vote, summary: !!opts.summary });
+    return true;
+  } catch (e) {
+    busyId = null; removeTyping();
+    if (e.name !== 'AbortError') { errorIds.add(mem.id); addMessage({ role: 'notice', error: true, text: `${mem.name}: lỗi kết nối (${e.message}).` }); }
+    return false;
+  } finally {
+    busyId = null; currentCtrl = null; progress.done++; renderSide();
+  }
+}
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+async function runSequence(label, total, fn) {
+  if (running) return;
+  running = true; stopRequested = false; progress = { label, done: 0, total }; updateButtons(); renderSide();
+  try { await fn(); }
+  finally {
+    running = false; stopRequested = false; setStatus('');
+    progress = { label: room.topic ? `Xong · ${countRounds()} vòng` : 'Chờ chủ đề', done: 0, total: 0 };
+    updateButtons(); removeTyping(); renderSide();
+  }
+}
+function countRounds() { return room.messages.filter(m => m.role === 'round').length; }
+
+function isConsensusMode() { return config.settings.mode === 'consensus'; }
+function defaultRun() {
+  return isConsensusMode() ? runRounds(Number(config.settings.consensusCap) || 12, true) : runRounds(Number(config.settings.roundsPerTurn) || 2, false);
+}
+
+async function runRounds(n, consensus = false) {
+  if (!enabledMembers().length) { addMessage({ role: 'notice', error: true, text: 'Chưa có thành viên nào trong phòng. Bật ít nhất một AI ở cột bên phải.' }); return; }
+  if (consensus && enabledMembers().length < 2) { addMessage({ role: 'notice', error: true, text: 'Chế độ đồng thuận cần ít nhất 2 thành viên.' }); return; }
+  if (consensus) {
+    const st = stubbornMembers();
+    if (st.length) addMessage({ role: 'notice', text: `Lưu ý: ${st.map(m => m.name).join(', ')} có cá tính kiểu “không bao giờ đồng ý / phản đối số đông” — phòng có thể chạy đến trần ${n} vòng mà không chốt được.` });
+  }
+  let result = null; // 'win' | 'cap' | null
+  let winnerId = null, roundsRun = 0;
+  await runSequence(consensus ? `Tìm đồng thuận · trần ${n}` : `Thảo luận · ${n} vòng`, n * enabledMembers().length, async () => {
+    for (let r = 1; r <= n; r++) {
+      if (stopRequested) break;
+      const roundNo = countRounds() + 1;
+      progress.label = consensus ? `Vòng ${roundNo} · trần ${countRounds() + n - r + 1}` : `Vòng ${roundNo}`;
+      addMessage({ role: 'round', text: `Vòng ${roundNo}` });
+      const order = config.settings.shuffle ? shuffle(enabledMembers()) : enabledMembers();
+      let ok = 0, tried = 0;
+      for (const mem of order) {
+        if (stopRequested) break;
+        const hasAI = room.messages.some(m => m.role === 'ai');
+        let instruction = !hasAI
+          ? `Bạn là người phát biểu đầu tiên. Hãy nêu quan điểm của bạn về chủ đề.`
+          : `Đến lượt bạn (${mem.name}) phát biểu — vòng ${roundNo}. Hãy nêu quan điểm và nhận xét ý kiến của các thành viên khác.`;
+        if (consensus) {
+          const prev = previousVote(mem.id);
+          const t = tallyOf(latestVotes());
+          const tallyTxt = Object.entries(t.counts).map(([id, c]) => `${memberById(id)?.name || id}: ${c} phiếu`).join(', ');
+          instruction += `\n\nPhiếu lượt trước của bạn: ${prev ? voteLabel(prev, mem.id) : '(chưa bỏ phiếu)'}.` +
+            (tallyTxt ? ` Kết quả phiếu hiện tại: ${tallyTxt}.` : '') +
+            `\nNhớ kết thúc bằng 2 dòng PHIẾU: và LÝ DO:.`;
+        }
+        tried++; if (await speak(mem, instruction, { vote: consensus })) ok++;
+      }
+      roundsRun++;
+      if (tried && !ok) { addMessage({ role: 'notice', error: true, text: 'Cả vòng không ai trả lời được nên phòng tạm dừng. Xem lỗi phía trên và kiểm tra Cài đặt.' }); break; }
+      if (consensus && !stopRequested) {
+        const t = tallyOf(roundVotes());
+        addMessage({ role: 'tally', text: `Phiếu sau vòng ${roundNo}:`, counts: t.counts, missing: t.missing });
+        const ids = Object.keys(t.counts);
+        // cần ít nhất 2 vòng để tránh "đồng thuận" dễ dãi ngay từ vòng đầu
+        if (countRounds() >= 2 && t.missing === 0 && ids.length === 1) { result = 'win'; winnerId = ids[0]; break; }
+        if (r === n) result = 'cap';
+      }
+    }
+  });
+  if (result === 'win') {
+    const w = memberById(winnerId);
+    const flips = room.messages.filter(m => m.role === 'ai' && m.vote && m.vote.changed).length;
+    addMessage({ role: 'verdict', winnerId, text: `Cả phòng ủng hộ phương án của ${w ? w.name : winnerId} sau ${countRounds()} vòng (${flips} lần đổi ý).` });
+    await runSummary('win', winnerId);
+  } else if (result === 'cap') {
+    addMessage({ role: 'verdict', winnerId: null, text: `Chưa thuyết phục được nhau sau ${countRounds()} vòng. Xem tổng kết các điểm còn bất đồng.` });
+    await runSummary('cap');
+  }
+}
+async function runMentions(mems) {
+  await runSequence('Trả lời chủ phòng', mems.length, async () => {
+    for (const mem of mems) {
+      if (stopRequested) break;
+      await speak(mem, `Chủ phòng vừa gọi tên bạn (${mem.name}) trong tin nhắn gần nhất. Hãy trả lời trực tiếp Chủ phòng.`);
+    }
+  });
+}
+async function runSummary(kind, winnerId) {
+  const s = config.settings;
+  let mem = memberById(s.summarizerId);
+  if (!mem || !mem.enabled) mem = enabledMembers()[0];
+  if (!mem) return;
+  await runSequence('Đang tổng kết', 1, async () => {
+    let extra = '';
+    if (kind === 'win') extra = ` Cả phòng vừa ĐỒNG THUẬN ủng hộ phương án của ${memberById(winnerId)?.name}. Hãy nói rõ phương án đó là gì, và dựa trên các LÝ DO bỏ phiếu, giải thích lập luận nào đã thuyết phục từng người đổi ý.`;
+    if (kind === 'cap') extra = ` Phòng đã hết số vòng mà CHƯA đồng thuận. Hãy nêu các phương án còn cạnh tranh, ai ủng hộ phương án nào và vì sao, mấu chốt bất đồng là gì, và Chủ phòng cần thêm thông tin gì để quyết định.`;
+    await speak(mem, `Lần này bạn đóng vai NGƯỜI TỔNG KẾT, không tranh luận thêm. Hãy: (1) tóm tắt quan điểm chính của từng thành viên, gọi tên; (2) chỉ ra điểm đồng thuận; (3) chỉ ra điểm còn bất đồng; (4) đề xuất kết luận và bước tiếp theo cho Chủ phòng. Lần này được phép dài tới khoảng ${s.maxWords * 3} từ, dùng tiêu đề in đậm và gạch đầu dòng.${extra}`, { summary: true });
+  });
+}
+
+function findMentions(text) {
+  const lower = text.toLowerCase();
+  return enabledMembers().filter(m => lower.includes('@' + m.name.toLowerCase()));
+}
+function send() {
+  const input = $('input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; autoGrow();
+  if (!room.topic) {
+    room.topic = text.length > 300 ? text.slice(0, 300) + '…' : text;
+    addMessage({ role: 'owner', text });
+    renderFeed(); updateButtons();
+    defaultRun();
+    return;
+  }
+  addMessage({ role: 'owner', text });
+  if (running) { setStatus('Đã ghi nhận ý kiến của bạn — người nói kế tiếp sẽ đọc được.'); return; }
+  const mentions = findMentions(text);
+  if (mentions.length) runMentions(mentions);
+  else defaultRun();
+}
+function stop() {
+  stopRequested = true;
+  if (currentCtrl) currentCtrl.abort();
+  addMessage({ role: 'notice', text: 'Chủ phòng đã dừng cuộc thảo luận.' });
+}
+
+function exportMd() {
+  const lines = [`# Biên bản thảo luận`, ``, `**Chủ đề:** ${room.topic || '(chưa có)'}`, `**Thời gian:** ${new Date().toLocaleString('vi-VN')}`, `**Thành viên:** ${enabledMembers().map(m => `${m.name} (${m.model})`).join(', ')}`, ``];
+  for (const m of room.messages) {
+    if (m.role === 'round') lines.push(`---`, `### ${m.text}`, ``);
+    else if (m.role === 'owner') lines.push(`**🧑 Chủ phòng:** ${m.text}`, ``);
+    else if (m.role === 'ai') {
+      lines.push(`**${m.name}**${m.summary ? ' (tổng kết)' : ''}:`, ``, m.text, ``);
+      if (m.vote) lines.push(`> 🗳 Phiếu: ${m.vote.forId ? voteLabel(m.vote.forId, m.memberId) : 'không rõ'}${m.vote.changed ? ' — **ĐỔI Ý**' : ''}  `, `> Lý do: ${m.vote.reason || '(không nêu)'}`, ``);
+    }
+    else if (m.role === 'tally') lines.push(`**${m.text}** ${Object.entries(m.counts).map(([id, c]) => `${memberById(id)?.name || id}: ${c}`).join(' · ')}`, ``);
+    else if (m.role === 'verdict') lines.push(`## ${m.winnerId ? '🏆 Đồng thuận' : '⚖️ Chưa đồng thuận'}`, ``, m.text, ``);
+    else if (m.role === 'notice') lines.push(`> ${m.text}`, ``);
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  const slug = (room.topic || 'thao-luan').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').replace(/[^a-z0-9]+/gi, '-').slice(0, 40).replace(/^-|-$/g, '');
+  a.href = URL.createObjectURL(blob); a.download = `bien-ban-${slug || 'thao-luan'}.md`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function newRoom() {
+  if (running) stop();
+  if (room.messages.length) {
+    const hist = loadHistory(); hist.unshift({ ...room, savedAt: Date.now() }); saveHistory(hist);
+  }
+  room = { topic: '', messages: [] }; errorIds.clear();
+  progress = { label: 'Chờ chủ đề', done: 0, total: 0 };
+  saveRoom(); renderFeed(); renderSide(); updateButtons(); $('input').focus();
+}
+
+// ================= Cài đặt =================
+let draftMembers = [];
+async function loadModelLists() {
+  try {
+    const lists = await api.models();
+    $('dlOpenrouter').innerHTML = (lists.openrouter || []).map(m => `<option value="${esc(m.id)}">${esc(m.name || '')}</option>`).join('');
+    $('dlGemini').innerHTML = (lists.gemini || []).length
+      ? lists.gemini.map(m => `<option value="${esc(m.id)}">${esc(m.name || '')}</option>`).join('')
+      : '<option value="gemini-flash-latest"><option value="gemini-3.5-flash"><option value="gemini-3.1-flash-lite">';
+  } catch {}
+}
+function testMember(m) {
+  return api.speak(m, 'Trả lời đúng một câu ngắn bằng tiếng Việt.', `Chào ${m.name}, bạn nghe rõ không?`);
+}
+function openSettings() {
+  const k = config.keys, s = config.settings;
+  $('keyHelp').textContent = api.mode === 'server'
+    ? 'Key chỉ lưu trên máy tính này. Claude có thể dùng gói Claude của bạn qua Claude Code nên không cần key.'
+    : 'Key chỉ lưu trong trình duyệt trên thiết bị này, không gửi đi đâu ngoài nhà cung cấp AI tương ứng.';
+  $('kGemini').value = k.gemini || ''; $('kOpenrouter').value = k.openrouter || '';
+  $('kAnthropic').value = k.anthropic || ''; $('kOpenai').value = k.openai || '';
+  $('sMode').value = s.mode || 'fixed'; $('sCap').value = s.consensusCap || 12; $('sRounds').value = s.roundsPerTurn; $('sWords').value = s.maxWords; $('sLang').value = s.language;
+  $('sContext').value = s.contextLimit; $('sShuffle').checked = !!s.shuffle;
+  draftMembers = JSON.parse(JSON.stringify(config.members));
+  draftMembers.forEach(m => (m.avatar = avatarOf(m)));
+  renderMemberEditor();
+  $('settingsModal').classList.add('open');
+  loadModelLists();
+}
+function closeSettings() { $('settingsModal').classList.remove('open'); }
+
+function renderMemberEditor() {
+  $('memberEditor').innerHTML = draftMembers.map((m, i) => `
+    <div class="mcard" data-i="${i}">
+      <div class="field"><label>Hình đại diện</label>
+        <div class="avatars">${Object.entries(SPRITES).map(([k, v]) => `<button type="button" class="${m.avatar === k ? 'sel' : ''}" data-avatar="${k}" title="${esc(v.label)}">${spriteSVG(k, m.color)}</button>`).join('')}</div></div>
+      <div class="top">
+        <div class="field"><label>Tên hiển thị</label><input data-f="name" value="${esc(m.name)}"></div>
+        <div class="field"><label>Nhà cung cấp</label><select data-f="provider">${Object.entries(PROVIDERS).map(([k, v]) => { const off = k === 'claude-code' && !api.caps.claudeCode;
+          return `<option value="${k}" ${m.provider === k ? 'selected' : ''} ${off && m.provider !== k ? 'disabled' : ''}>${esc(v.label)}${off ? ' — chỉ bản Windows' : ''}</option>`; }).join('')}</select></div>
+        <div class="field"><label>Model</label><input data-f="model" value="${esc(m.model)}" list="${PROVIDERS[m.provider]?.dl || ''}"></div>
+        <div class="field"><label>Màu</label><input type="color" data-f="color" value="${esc(m.color)}"></div>
+      </div>
+      ${m.provider === 'custom' ? `<div class="grid2">
+        <div class="field"><label>Base URL (vd. https://api.deepseek.com/v1)</label><input data-f="baseUrl" value="${esc(m.baseUrl || '')}"></div>
+        <div class="field"><label>API key</label><input data-f="apiKey" type="password" value="${esc(m.apiKey || '')}"></div></div>` : ''}
+      <div class="field"><label>Cá tính mẫu — chọn để điền nhanh, rồi sửa tuỳ ý</label>
+        <select data-preset>
+          <option value="">— Chọn một cá tính mẫu —</option>
+          ${PRESET_GROUPS.map(g => `<optgroup label="${esc(g)}">${PERSONA_PRESETS.map((p, pi) => p.group === g ? `<option value="${pi}">${esc(p.name)}</option>` : '').join('')}</optgroup>`).join('')}
+        </select></div>
+      <div class="field"><label>Vai trò / cá tính (càng cụ thể, tranh luận càng hay)</label><textarea data-f="persona" rows="3">${esc(m.persona || '')}</textarea></div>
+      <div class="field"><label>Thêm thói quen (bấm để ghép vào cá tính)</label>
+        <div class="habits">${HABITS.map((h, hi) => `<button type="button" class="chip" data-habit="${hi}">＋ ${esc(h.short)}</button>`).join('')}</div></div>
+      <div class="acts">
+        <label class="chk"><input type="checkbox" data-f="enabled" ${m.enabled ? 'checked' : ''}> Ngồi trong phòng</label>
+        <span class="test-out" id="test-${i}"></span>
+        <span style="display:flex;gap:10px"><button class="btn" data-test="${i}">Kiểm tra kết nối</button><button class="btn stop" data-del="${i}">Xoá</button></span>
+      </div>
+    </div>`).join('');
+  $('sSummarizer').innerHTML = draftMembers.map(m => `<option value="${esc(m.id)}" ${config.settings.summarizerId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+}
+
+$('memberEditor').addEventListener('input', e => {
+  const card = e.target.closest('.mcard'); const f = e.target.dataset.f;
+  if (!card || !f) return;
+  const m = draftMembers[+card.dataset.i];
+  m[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  if (f === 'color') card.querySelectorAll('[data-avatar]').forEach(b => (b.innerHTML = spriteSVG(b.dataset.avatar, m.color)));
+  if (f === 'provider') {
+    const defaults = { 'claude-code': 'sonnet', gemini: 'gemini-flash-latest', openrouter: 'openai/gpt-oss-120b:free', anthropic: 'claude-sonnet-5-5', openai: 'gpt-5.5', custom: '' };
+    m.model = defaults[m.provider] ?? '';
+    renderMemberEditor();
+  }
+});
+$('memberEditor').addEventListener('change', e => {
+  if (!e.target.matches('[data-preset]') || e.target.value === '') return;
+  const card = e.target.closest('.mcard'); const m = draftMembers[+card.dataset.i];
+  m.persona = PERSONA_PRESETS[+e.target.value].text;
+  card.querySelector('[data-f="persona"]').value = m.persona;
+  e.target.value = '';
+});
+$('memberEditor').addEventListener('click', async e => {
+  const hb = e.target.closest('[data-habit]');
+  if (hb) {
+    const card = hb.closest('.mcard'); const m = draftMembers[+card.dataset.i];
+    const add = HABITS[+hb.dataset.habit].text;
+    if (!(m.persona || '').includes(add)) m.persona = ((m.persona || '').trim() + ' ' + add).trim();
+    card.querySelector('[data-f="persona"]').value = m.persona;
+    return;
+  }
+  const av = e.target.closest('[data-avatar]');
+  if (av) { const card = av.closest('.mcard'); draftMembers[+card.dataset.i].avatar = av.dataset.avatar; card.querySelectorAll('[data-avatar]').forEach(b => b.classList.toggle('sel', b === av)); return; }
+  const del = e.target.dataset.del, test = e.target.dataset.test;
+  if (del !== undefined) { draftMembers.splice(+del, 1); renderMemberEditor(); }
+  if (test !== undefined) {
+    const m = draftMembers[+test], out = $('test-' + test);
+    await persistKeys();
+    out.className = 'test-out'; out.textContent = 'Đang gọi thử…';
+    e.target.disabled = true;
+    try {
+      const r = await testMember(m);
+      if (r.error) { out.className = 'test-out bad'; out.textContent = '✗ ' + r.error; }
+      else { out.className = 'test-out ok'; out.textContent = '✓ ' + r.text.slice(0, 140); }
+    } catch (err) { out.className = 'test-out bad'; out.textContent = '✗ ' + err.message; }
+    e.target.disabled = false;
+  }
+});
+$('btnAddMember').onclick = () => {
+  const palette = ['#d9534f', '#3a9ad9', '#e0a030', '#2aa198', '#9b59b6', '#6c7a89'];
+  const keys = Object.keys(SPRITES);
+  draftMembers.push({ id: 'm' + Date.now().toString(36), name: 'Thành viên mới', provider: 'openrouter', model: 'openrouter/free',
+    color: palette[draftMembers.length % palette.length], avatar: keys[(draftMembers.length + 3) % keys.length], enabled: true, persona: '' });
+  renderMemberEditor();
+  $('memberEditor').lastElementChild.scrollIntoView({ behavior: 'smooth' });
+};
+function readKeys() {
+  return { gemini: $('kGemini').value.trim(), openrouter: $('kOpenrouter').value.trim(), anthropic: $('kAnthropic').value.trim(), openai: $('kOpenai').value.trim() };
+}
+async function persistKeys() {
+  config.keys = readKeys();
+  await api.saveConfig({ keys: config.keys });
+}
+$('btnSaveSettings').onclick = async () => {
+  const names = draftMembers.map(m => m.name.trim().toLowerCase());
+  if (names.some(n => !n)) return alertInline('Mỗi thành viên cần có tên.');
+  if (new Set(names).size !== names.length) return alertInline('Tên các thành viên phải khác nhau.');
+  draftMembers.forEach(m => { m.name = m.name.trim(); m.model = (m.model || '').trim(); });
+  config.keys = readKeys();
+  config.settings = {
+    roundsPerTurn: Math.max(1, Math.min(30, +$('sRounds').value || 2)),
+    mode: $('sMode').value,
+    consensusCap: Math.max(2, Math.min(30, +$('sCap').value || 12)),
+    maxWords: Math.max(30, +$('sWords').value || 150),
+    language: $('sLang').value.trim() || 'tiếng Việt',
+    contextLimit: Math.max(5, +$('sContext').value || 30),
+    shuffle: $('sShuffle').checked,
+    summarizerId: $('sSummarizer').value,
+  };
+  config.members = draftMembers;
+  await api.saveConfig({ keys: config.keys, settings: config.settings, members: config.members });
+  closeSettings(); renderSide(); renderFeed();
+};
+function alertInline(msg) {
+  let el = document.querySelector('.modal footer .warn');
+  if (!el) { el = document.createElement('span'); el.className = 'warn'; el.style.cssText = 'color:var(--red);margin-right:auto;font-size:13px'; document.querySelector('.modal footer').prepend(el); }
+  el.textContent = msg;
+}
+
+// ================= Hướng dẫn kết nối (lần đầu) =================
+const wiz = { step: 0, res: { gemini: null, openrouter: null, claude: null }, msg: {}, claude: null };
+const WIZ_STEPS = ['Chào mừng', 'Gemini', 'OpenRouter', 'Claude', 'Hoàn tất'];
+let installEvt = null;
+
+function openWizard() { wiz.step = 0; renderWizard(); $('wizModal').classList.add('open'); }
+function closeWizard() { $('wizModal').classList.remove('open'); }
+function wizResult(key) {
+  const r = wiz.res[key];
+  if (r === 'ok') return `<div class="res ok">✓ ${esc(wiz.msg[key] || 'Kết nối thành công')}</div>`;
+  if (r === 'bad') return `<div class="res bad">✗ ${esc(wiz.msg[key] || 'Lỗi')}</div>`;
+  if (r === 'wait') return `<div class="res">Đang gọi thử…</div>`;
+  return '<div class="res"></div>';
+}
+function extLink(url, label) { return `<a class="btn" href="${url}" target="_blank" rel="noopener">↗ ${label}</a>`; }
+
+function renderWizard() {
+  const st = wiz.step, desktop = api.mode === 'server';
+  $('wizSteps').innerHTML = WIZ_STEPS.map((_, i) => `<i class="${i < st ? 'on' : i === st ? 'cur' : ''}"></i>`).join('');
+  $('wizStepLabel').textContent = `Bước ${st + 1}/${WIZ_STEPS.length} · ${WIZ_STEPS[st]}`;
+  let body = '', foot = '';
+  const back = st > 0 ? '<button class="btn" data-wiz="back">← Quay lại</button>' : '';
+  if (st === 0) {
+    const cast = config.members.slice(0, 4).map(m => `<div class="portrait">${spriteSVG(avatarOf(m), m.color)}</div>`).join('');
+    body = `<div class="cast"><div class="owner-box" style="width:52px;height:52px">B</div>${cast}</div>
+      <h3>Chào mừng đến Tun Ideas</h3>
+      <p>Tun Ideas là phòng họp nơi các AI cùng tranh luận về ý tưởng của bạn. Bạn là chủ phòng: đặt chủ đề, các AI phát biểu, phản biện nhau, có thể bỏ phiếu đến khi đồng thuận.</p>
+      <div class="box">🔑 Bạn dùng AI và API key <b>của chính bạn</b>. Key chỉ lưu trên ${desktop ? 'máy tính' : 'thiết bị'} này.<br>
+      ${desktop ? '💻 <b>Bản Windows:</b> có thể dùng Claude bằng gói Claude của bạn (qua Claude Code), cộng Gemini và các model miễn phí.'
+        : '📱 <b>Bản web / Android:</b> dùng Gemini và các model miễn phí trên OpenRouter. Claude cần API key trả phí (không bắt buộc).'}</div>
+      <p>Mất khoảng 5 phút để kết nối. Bạn có thể bỏ qua bất kỳ bước nào và làm lại sau qua nút <b>🔌 Kết nối AI</b>.</p>`;
+    foot = `<button class="btn" data-wiz="skipall">Để sau</button><button class="btn go" data-wiz="next">Bắt đầu →</button>`;
+  } else if (st === 1) {
+    body = `<h3>Gemini <span class="badge">miễn phí</span></h3>
+      <ol><li>Mở Google AI Studio và đăng nhập tài khoản Google. ${extLink('https://aistudio.google.com/apikey', 'Mở trang lấy key')}</li>
+      <li>Bấm <b>Create API key</b>, copy chuỗi bắt đầu bằng <code>AIza…</code></li>
+      <li>Dán vào ô dưới rồi bấm <b>Kiểm tra</b>.</li></ol>
+      <div class="row"><input id="wGemini" type="password" placeholder="AIza..." value="${esc(config.keys.gemini || '')}"><button class="btn" data-wiz="test-gemini">Kiểm tra</button></div>
+      ${wizResult('gemini')}`;
+    foot = `${back}<button class="btn" data-wiz="next" style="margin-left:auto">${wiz.res.gemini === 'ok' ? 'Tiếp →' : 'Bỏ qua bước này →'}</button>`;
+  } else if (st === 2) {
+    body = `<h3>OpenRouter <span class="badge">có model miễn phí</span></h3>
+      <p class="help" style="margin-top:0">Một key dùng được nhiều AI: GPT-OSS (của OpenAI), Llama, Qwen… Thành viên GPT và Khách mời dùng key này.</p>
+      <ol><li>Đăng ký tài khoản (đăng nhập bằng Google cho nhanh). ${extLink('https://openrouter.ai', 'Mở OpenRouter')}</li>
+      <li>Vào <b>Privacy</b>, bật <b>“Allow free endpoints that train on request data”</b> — bắt buộc để dùng model miễn phí. ${extLink('https://openrouter.ai/settings/privacy', 'Mở Privacy')}</li>
+      <li>Vào <b>API Keys</b> → <b>Create Key</b>. Mục Credit limit chọn mức thấp nhất. Copy chuỗi <code>sk-or-…</code> (chỉ hiện một lần). ${extLink('https://openrouter.ai/settings/keys', 'Mở API Keys')}</li>
+      <li>Dán vào ô dưới rồi bấm <b>Kiểm tra</b>.</li></ol>
+      <div class="row"><input id="wOpenrouter" type="password" placeholder="sk-or-..." value="${esc(config.keys.openrouter || '')}"><button class="btn" data-wiz="test-openrouter">Kiểm tra</button></div>
+      ${wizResult('openrouter')}
+      <div class="box warn">Model miễn phí: khoảng 50 lượt/ngày và nhà cung cấp có thể dùng nội dung để huấn luyện — đừng thảo luận thông tin nhạy cảm.</div>`;
+    foot = `${back}<button class="btn" data-wiz="next" style="margin-left:auto">${wiz.res.openrouter === 'ok' ? 'Tiếp →' : 'Bỏ qua bước này →'}</button>`;
+  } else if (st === 3) {
+    if (desktop) {
+      const cs = wiz.claude;
+      let status = '<div class="box">Đang tìm Claude Code trên máy…</div>';
+      if (cs && cs.installed) status = `<div class="box">✓ Đã tìm thấy <b>Claude Code ${esc(cs.version)}</b>. Bấm <b>Kiểm tra</b> để chắc chắn bạn đã đăng nhập.</div>`;
+      else if (cs) status = `<div class="box warn">Chưa thấy Claude Code trên máy. Cài theo các bước dưới (cần gói Claude trả phí: Pro hoặc Max).</div>
+        <ol><li>Bấm phím <b>Windows + X</b> → chọn <b>Terminal</b> hoặc <b>Windows PowerShell</b>.</li>
+        <li>Dán lệnh sau rồi nhấn Enter: <code class="cmd">irm https://claude.ai/install.ps1 | iex</code><button class="btn" data-wiz="copycmd">Copy lệnh</button></li>
+        <li>Đóng và mở lại PowerShell, gõ <code>claude</code>, đăng nhập bằng tài khoản Claude, rồi gõ <code>/exit</code>.</li>
+        <li>Quay lại đây bấm <b>Tìm lại</b>.</li></ol>`;
+      body = `<h3>Claude <span class="badge">dùng gói Claude của bạn</span></h3>${status}
+        <div class="row"><button class="btn" data-wiz="recheck">↻ Tìm lại</button><button class="btn" data-wiz="test-claude">Kiểm tra</button></div>
+        ${wizResult('claude')}
+        <p class="help">Mỗi lượt Claude nói sẽ trừ vào hạn mức gói Claude (dùng chung với claude.ai). Không có gói Claude? Bỏ qua bước này — phòng vẫn chạy với các AI khác.</p>`;
+    } else {
+      body = `<h3>Claude <span class="badge">không bắt buộc</span></h3>
+        <p>Trên web và điện thoại, Claude chỉ dùng được bằng <b>API key trả phí</b> của Anthropic (gói Claude Pro không dùng được ở đây). Nếu không có, cứ bỏ qua — phòng vẫn chạy với Gemini và các model miễn phí.</p>
+        <ol><li>Tạo key tại Claude Console (cần nạp tiền). ${extLink('https://console.anthropic.com/settings/keys', 'Mở Claude Console')}</li>
+        <li>Dán key <code>sk-ant-…</code> vào ô dưới rồi bấm <b>Kiểm tra</b>.</li></ol>
+        <div class="row"><input id="wAnthropic" type="password" placeholder="sk-ant-..." value="${esc(config.keys.anthropic || '')}"><button class="btn" data-wiz="test-claude">Kiểm tra</button></div>
+        ${wizResult('claude')}`;
+    }
+    foot = `${back}<button class="btn" data-wiz="next" style="margin-left:auto">${wiz.res.claude === 'ok' ? 'Tiếp →' : 'Bỏ qua bước này →'}</button>`;
+  } else {
+    const line = (label, key, sprite, color) => {
+      const r = wiz.res[key];
+      const st2 = r === 'ok' ? '<b style="color:var(--green-d)">✓ Đã kết nối</b>' : (r === 'bad' ? '<b style="color:var(--red)">✗ Lỗi — sửa sau trong Cài đặt</b>' : '<span style="color:var(--muted)">– Bỏ qua</span>');
+      return `<div>${spriteSVG(sprite, color)}<span style="flex:1">${label}</span>${st2}</div>`;
+    };
+    const okCount = Object.values(wiz.res).filter(v => v === 'ok').length;
+    body = `<h3>${okCount ? 'Sẵn sàng!' : 'Chưa có AI nào được kết nối'}</h3>
+      <div class="sum">${line('Gemini', 'gemini', 'sao', '#4285F4')}${line('GPT & Khách mời (OpenRouter)', 'openrouter', 'robot', '#10A37F')}${line('Claude', 'claude', 'cao', '#D97757')}</div>
+      <p>${okCount ? 'Các AI đã kết nối sẽ được mời vào phòng. Bạn chỉnh tên, cá tính, model trong <b>⚙ Cài đặt</b>.' : 'Bạn cần ít nhất một AI để thảo luận. Có thể quay lại các bước trước, hoặc mở lại hướng dẫn sau.'}</p>
+      ${!desktop && !window.matchMedia('(display-mode: standalone)').matches ? `<div class="box">📲 <b>Cài lên điện thoại:</b> trong Chrome bấm menu <b>⋮</b> → <b>Thêm vào màn hình chính</b> (hoặc <b>Cài đặt ứng dụng</b>). Tun Ideas sẽ có biểu tượng như app thường.</div>` : ''}`;
+    foot = `${back}<button class="btn go" data-wiz="finish" style="margin-left:auto">✓ Vào phòng họp</button>`;
+  }
+  $('wizBody').innerHTML = body;
+  $('wizFoot').innerHTML = foot;
+  if (st === 3 && desktop && !wiz.claude) api.claudeStatus().then(cs => { wiz.claude = cs; if (wiz.step === 3) renderWizard(); });
+}
+
+async function wizTest(key) {
+  const keys = {};
+  if (key === 'gemini') keys.gemini = $('wGemini').value.trim();
+  if (key === 'openrouter') keys.openrouter = $('wOpenrouter').value.trim();
+  if (key === 'claude' && $('wAnthropic')) keys.anthropic = $('wAnthropic').value.trim();
+  Object.assign(config.keys, keys);
+  await api.saveConfig({ keys });
+  const desktop = api.mode === 'server';
+  const probe = {
+    gemini: { id: 'probe', name: 'Gemini', provider: 'gemini', model: (config.members.find(m => m.provider === 'gemini') || {}).model || 'gemini-flash-latest' },
+    openrouter: { id: 'probe', name: 'GPT', provider: 'openrouter', model: (config.members.find(m => m.provider === 'openrouter') || {}).model || 'openai/gpt-oss-120b:free' },
+    claude: desktop && !keys.anthropic ? { id: 'probe', name: 'Claude', provider: 'claude-code', model: 'sonnet' } : { id: 'probe', name: 'Claude', provider: 'anthropic', model: 'claude-sonnet-5-5' },
+  }[key];
+  wiz.res[key] = 'wait'; renderWizard();
+  const r = await testMember(probe);
+  wiz.res[key] = r.error ? 'bad' : 'ok';
+  wiz.msg[key] = r.error ? r.error : ('Trả lời: ' + String(r.text).slice(0, 120));
+  wiz.claudeVia = key === 'claude' ? probe.provider : wiz.claudeVia;
+  renderWizard();
+}
+
+async function wizFinish() {
+  // Mời vào phòng các AI đã kết nối được; giữ nguyên các thành viên tuỳ chỉnh
+  const r = wiz.res;
+  config.members.forEach(m => {
+    if (m.provider === 'gemini' && r.gemini) m.enabled = r.gemini === 'ok';
+    if (m.provider === 'openrouter' && r.openrouter && m.id !== 'guest') m.enabled = r.openrouter === 'ok';
+    if (m.id === 'claude' && r.claude) {
+      m.enabled = r.claude === 'ok';
+      if (r.claude === 'ok' && wiz.claudeVia) { m.provider = wiz.claudeVia; m.model = wiz.claudeVia === 'claude-code' ? 'sonnet' : 'claude-sonnet-5-5'; }
+    }
+  });
+  if (!memberById(config.settings.summarizerId)?.enabled) {
+    const first = enabledMembers()[0]; if (first) config.settings.summarizerId = first.id;
+  }
+  config.onboarded = true;
+  await api.saveConfig({ members: config.members, settings: config.settings, onboarded: true });
+  closeWizard(); renderSide(); renderFeed(); setStatus('');
+}
+
+$('wizModal').addEventListener('click', async e => {
+  const a = e.target.closest('[data-wiz]'); if (!a) return;
+  const act = a.dataset.wiz;
+  if (act === 'next') { wiz.step = Math.min(WIZ_STEPS.length - 1, wiz.step + 1); renderWizard(); }
+  else if (act === 'back') { wiz.step = Math.max(0, wiz.step - 1); renderWizard(); }
+  else if (act === 'skipall') { config.onboarded = true; await api.saveConfig({ onboarded: true }); closeWizard(); }
+  else if (act === 'finish') await wizFinish();
+  else if (act.startsWith('test-')) await wizTest(act.slice(5));
+  else if (act === 'recheck') { wiz.claude = null; renderWizard(); }
+  else if (act === 'copycmd') { try { await navigator.clipboard.writeText('irm https://claude.ai/install.ps1 | iex'); a.textContent = '✓ Đã copy'; } catch { a.textContent = 'Hãy bôi đen và copy'; } }
+});
+
+// ================= Lịch sử =================
+function openHistory() { renderHistory(); $('histModal').classList.add('open'); }
+function closeHistory() { $('histModal').classList.remove('open'); }
+function renderHistory() {
+  const h = loadHistory();
+  $('histBody').innerHTML = h.length ? h.map((r, i) => `<div class="hist-item"><div class="t"><b>${esc(r.topic || '(không có chủ đề)')}</b>
+      <small>${new Date(r.savedAt || Date.now()).toLocaleString('vi-VN')} · ${r.messages.filter(m => m.role === 'ai').length} lượt nói${r.messages.some(m => m.role === 'verdict' && m.winnerId) ? ' · đã đồng thuận' : ''}</small></div>
+      <button class="btn" data-hopen="${i}">Mở lại</button><button class="btn stop" data-hdel="${i}">Xoá</button></div>`).join('')
+    : '<p class="help" style="padding:20px 0;text-align:center">Chưa có phòng nào. Khi bấm "↺ Phòng mới", phòng cũ sẽ được lưu ở đây.</p>';
+}
+$('histModal').addEventListener('click', e => {
+  if (e.target.closest('[data-close-hist]')) return closeHistory();
+  const o = e.target.closest('[data-hopen]'), d = e.target.closest('[data-hdel]');
+  const h = loadHistory();
+  if (d) { h.splice(+d.dataset.hdel, 1); saveHistory(h); renderHistory(); }
+  if (o) {
+    if (running) stop();
+    const [picked] = h.splice(+o.dataset.hopen, 1);
+    if (room.messages.length) h.unshift({ ...room, savedAt: Date.now() });
+    saveHistory(h);
+    room = picked; delete room.savedAt; errorIds.clear();
+    progress = { label: `${countRounds()} vòng đã qua`, done: 0, total: 0 };
+    saveRoom(); renderFeed(); renderSide(); updateButtons(); closeHistory();
+  }
+});
+
+// ================= Sự kiện =================
+function autoGrow() { const t = $('input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 180) + 'px'; }
+$('input').addEventListener('input', autoGrow);
+$('input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+$('btnSend').onclick = send;
+$('btnStop').onclick = stop;
+$('btnMore').onclick = () => runRounds(1, isConsensusMode());
+$('btnSummary').onclick = () => runSummary();
+$('btnExport').onclick = exportMd;
+$('btnNew').onclick = newRoom;
+$('btnSettings').onclick = openSettings;
+$('btnWizard').onclick = openWizard;
+$('btnHistory').onclick = openHistory;
+$('btnInstall').onclick = async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch {} installEvt = null; $('btnInstall').style.display = 'none'; };
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('btnInstall').style.display = ''; });
+document.querySelectorAll('[data-close]').forEach(b => (b.onclick = closeSettings));
+$('mates').addEventListener('change', async e => {
+  const id = e.target.dataset.toggle; if (!id) return;
+  memberById(id).enabled = e.target.checked;
+  renderSide(); if (!room.messages.length) renderFeed();
+  await api.saveConfig({ members: config.members });
+});
+$('mentionBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-mention]'); if (!b) return;
+  const t = $('input'); t.value = (t.value ? t.value.trimEnd() + ' ' : '') + '@' + b.dataset.mention + ' '; t.focus(); autoGrow();
+});
+feed.addEventListener('click', e => {
+  const b = e.target.closest('[data-example]'); if (b) { $('input').value = b.dataset.example; send(); }
+});
+window.addEventListener('resize', () => { if (config) renderRoom(); });
+
+// ================= Khởi động =================
+(async () => {
+  $('brandLogo').innerHTML = logoSVG();
+  config = await api.init();
+  if (room.topic) progress = { label: `${countRounds()} vòng đã qua`, done: 0, total: 0 };
+  renderSide(); renderFeed(); updateButtons();
+  if (!config.onboarded) openWizard();
+  else {
+    const k = config.keys;
+    const needKeys = config.members.some(m => m.enabled && ((m.provider === 'gemini' && !k.gemini) || (m.provider === 'openrouter' && !k.openrouter)));
+    if (needKeys && !room.messages.length) setStatus('👉 Bấm "🔌 Kết nối AI" để thêm key.');
+  }
+  if (api.mode === 'browser' && 'serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  if (window.matchMedia('(min-width: 981px)').matches) $('input').focus();
+})();
+</script>
+</body>
+</html>
