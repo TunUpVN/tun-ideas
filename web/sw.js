@@ -1,6 +1,6 @@
 // Tun Ideas — service worker: cho phép cài như app và mở được khi mạng chập chờn.
 // Ưu tiên bản mới nhất từ mạng; mất mạng thì dùng bản đã lưu.
-const CACHE = 'tun-ideas-v1';
+const CACHE = 'tun-ideas-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
 self.addEventListener('install', e => {

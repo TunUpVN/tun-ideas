@@ -137,6 +137,17 @@
   .seat .say { display: none; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); background: #fff; border: 2px solid var(--line); font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 14px; white-space: nowrap; }
   .seat .say::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 6px; height: 6px; background: #fff; border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: translateX(-50%) rotate(45deg); }
   .seat.idle .spr svg { animation: breathe 2.4s infinite steps(2); }
+  .seat.sleep .spr svg { opacity: .55; filter: saturate(.4); }
+  .seat.sleep .say { display: block; background: #fbefc8; animation: zz 1.6s infinite steps(2); }
+  .seat.sleep .say::after { background: #fbefc8; }
+  @keyframes zz { 0% { transform: translate(-50%, 0); } 50% { transform: translate(-40%, -3px); } }
+  .quota { align-self: stretch; background: #fbefc8; border: 3px solid var(--line); box-shadow: 4px 4px 0 rgba(42,39,35,.25); padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .quota .portrait { background: #fff6d8; } .quota .portrait svg { opacity: .6; }
+  .quota .qt { font-weight: 700; margin-bottom: 4px; }
+  .quota p { margin: 4px 0; font-size: 13px; }
+  .quota .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .quota details { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .mate .retry { border: 2px solid var(--line); background: #fff; font-size: 11px; padding: 0 6px; margin-left: 4px; }
   .seat.chair-b .owner-box { width: 34px; height: 34px; font-size: 16px; margin: 3px auto; }
   @keyframes bob { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
   @keyframes breathe { 0%, 70% { transform: translateY(0); } 85% { transform: translateY(1px); } }
@@ -295,6 +306,7 @@
       <div class="room" id="room"></div>
       <div class="legend">
         <span style="--c: var(--blue)">Đang nói</span>
+        <span style="--c: var(--yellow)">Hết lượt 💤</span>
         <span style="--c: var(--green)">Sẵn sàng</span>
         <span style="--c: var(--red)">Lỗi</span>
         <span style="--c: var(--gray)">Vắng</span>
@@ -812,9 +824,10 @@ function renderRoom() {
     const x = top ? tx[i] : bx[i - topN];
     const y = top ? 40 : 164;
     const talking = busyId === m.id;
-    const cls = talking ? 'talking' : 'idle';
-    const say = talking ? '…' : '';
-    const nmColor = errorIds.has(m.id) ? 'var(--red)' : m.color;
+    const asleep = exhausted.has(m.id);
+    const cls = talking ? 'talking' : (asleep ? 'sleep' : 'idle');
+    const say = talking ? '…' : (asleep ? 'z Z' : '');
+    const nmColor = asleep ? '#a47d12' : (errorIds.has(m.id) ? 'var(--red)' : m.color);
     html += `<div class="seat ${cls}" style="left:${x}px;top:${y}px" title="${esc(m.name)}">
       <div class="spr"><span class="say">${say}</span>${spriteSVG(avatarOf(m), m.color)}</div>
       <div class="nm" style="color:${esc(nmColor)}">${esc(m.name)}${lastSpeaker && lastSpeaker.memberId === m.id && !talking ? ' ✓' : ''}</div>
@@ -826,6 +839,7 @@ function renderRoom() {
 function mateStatus(m) {
   if (!m.enabled) return ['Vắng mặt', 'var(--gray)'];
   if (busyId === m.id) return ['Đang nói', 'var(--blue)'];
+  if (exhausted.has(m.id)) return ['Hết lượt 💤', '#a47d12'];
   if (errorIds.has(m.id)) return ['Lỗi kết nối', 'var(--red)'];
   if (running) return ['Đang nghe', 'var(--green)'];
   return ['Sẵn sàng', 'var(--green)'];
@@ -836,7 +850,7 @@ function renderMates() {
     return `<div class="mate ${m.enabled ? '' : 'off'}">
       <div class="spr">${spriteSVG(avatarOf(m), m.color)}</div>
       <div class="info"><div class="nm" style="color:${esc(m.color)}">${esc(m.name)} <span style="color:${c};font-size:12px">· ${st}</span></div>
-      <div class="sub">${latestVotes()[m.id] ? '🗳 Ủng hộ: ' + esc(voteLabel(latestVotes()[m.id], m.id)) : esc(m.model)}</div></div>
+      <div class="sub">${exhausted.has(m.id) ? `tạm ngồi ngoài <button class="retry" data-retry="${esc(m.id)}">↻ Thử lại</button>` : (latestVotes()[m.id] ? '🗳 Ủng hộ: ' + esc(voteLabel(latestVotes()[m.id], m.id)) : esc(m.model))}</div></div>
       <label class="toggle ${m.enabled ? 'on' : ''}" title="Cho vào / mời ra"><input type="checkbox" data-toggle="${esc(m.id)}" ${m.enabled ? 'checked' : ''}><i></i></label>
     </div>`;
   }).join('');
@@ -872,6 +886,7 @@ function renderMsg(m) {
   if (m.role === 'notice') return `<div class="notice ${m.error ? 'err' : ''}">${esc(m.text)}</div>`;
   if (m.role === 'round') return `<div class="round-sep"><span class="tag">${esc(m.text)}</span></div>`;
   if (m.role === 'tally') return renderTally(m);
+  if (m.role === 'quota') return renderQuota(m);
   if (m.role === 'verdict') return renderVerdict(m);
   if (m.role === 'owner') return `<div class="msg owner"><div class="owner-box">B</div><div class="body">
       <div class="who">Chủ phòng <span class="meta">${time(m.ts)}</span></div><div class="bubble">${md(m.text)}</div></div></div>`;
@@ -940,7 +955,7 @@ function transcriptText() {
 }
 function buildSystem(mem, opts = {}) {
   const s = config.settings;
-  const others = enabledMembers().filter(m => m.id !== mem.id).map(m => m.name).join(', ') || '(chưa có)';
+  const others = activeMembers().filter(m => m.id !== mem.id).map(m => m.name).join(', ') || '(chưa có)';
   return `Bạn là "${mem.name}", một thành viên AI trong một phòng chat nhóm. Các thành viên AI khác: ${others}. Người tạo phòng ("Chủ phòng") là con người: họ đặt chủ đề và điều phối cuộc thảo luận.
 
 Vai trò / cá tính của bạn: ${mem.persona || 'Người tham gia thẳng thắn, có chính kiến.'}
@@ -958,7 +973,7 @@ Quy tắc phòng chat:
 - Ở CUỐI mỗi lượt nói, BẮT BUỘC thêm đúng 2 dòng theo mẫu:
 PHIẾU: <tên thành viên có phương án bạn ủng hộ — có thể là chính bạn (${mem.name})>
 LÝ DO: <1–2 câu giải thích vì sao bạn bỏ phiếu như vậy. Nếu ĐỔI PHIẾU so với lượt trước, phải nói rõ lập luận nào của ai đã thuyết phục bạn.>
-- Tên hợp lệ: ${enabledMembers().map(m => m.name).join(', ')}.
+- Tên hợp lệ: ${activeMembers().map(m => m.name).join(', ')}.
 - Chỉ đổi phiếu khi thực sự bị thuyết phục bởi lập luận cụ thể. Không đồng ý cho êm chuyện. Nếu giữ phương án riêng, hãy bảo vệ nó và tìm cách thuyết phục người khác.` : ''}`;
 }
 function buildPrompt(mem, instruction) {
@@ -1020,12 +1035,124 @@ function roundVotes() {
 }
 function tallyOf(votes) {
   const counts = {}; let missing = 0;
-  for (const mem of enabledMembers()) { const f = votes[mem.id]; if (f) counts[f] = (counts[f] || 0) + 1; else missing++; }
+  for (const mem of activeMembers()) { const f = votes[mem.id]; if (f && isActive(memberById(f) || {})) counts[f] = (counts[f] || 0) + 1; else missing++; }
   return { counts, missing };
 }
 function stubbornMembers() {
   return enabledMembers().filter(m => /không bao giờ đồng ý|phản đối số đông|luật sư của quỷ/i.test(m.persona || ''));
 }
+
+// ================= Hết lượt =================
+// exhausted: memberId → { provider, at } — AI hết lượt sẽ tạm ngồi ngoài trong phiên này
+const exhausted = new Map();
+function isActive(m) { return m.enabled && !exhausted.has(m.id); }
+function activeMembers() { return config.members.filter(isActive); }
+function isQuotaError(msg) {
+  return /Lỗi 429|RESOURCE_EXHAUSTED|quota|rate.?limit|limit (reached|exceeded)|usage limit|hạn mức|5-hour|weekly limit|per-day|insufficient.?(credit|balance|funds)|credit balance|Lỗi 402/i.test(msg || '');
+}
+function fmtTime(d) {
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const tmr = new Date(now); tmr.setDate(now.getDate() + 1);
+  const day = sameDay ? 'hôm nay' : (d.toDateString() === tmr.toDateString() ? 'ngày mai' : d.toLocaleDateString('vi-VN'));
+  return `${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ${day}`;
+}
+function nextMidnightUTC() { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1)); }
+function nextMidnightPT() {
+  const now = new Date();
+  const tz = t => Date.parse(now.toLocaleString('en-US', { timeZone: t }));
+  const off = tz('America/Los_Angeles') - tz('UTC');          // độ lệch giờ Thái Bình Dương (ms)
+  const pt = new Date(now.getTime() + off);
+  const midPT = Date.UTC(pt.getUTCFullYear(), pt.getUTCMonth(), pt.getUTCDate() + 1);
+  return new Date(midPT - off);
+}
+function quotaAdvice(mem, err) {
+  const daily = /per-day|daily|per day|RPD/i.test(err);
+  switch (mem.provider) {
+    case 'openrouter':
+      return daily
+        ? { when: `khoảng ${fmtTime(nextMidnightUTC())} — lượt miễn phí của OpenRouter được làm mới mỗi ngày.`,
+            tip: 'Hạn mức ~50 lượt/ngày tính chung cho mọi model miễn phí trên OpenRouter, nên đổi model không giúp được. Nạp 10 USD một lần sẽ nâng lên ~1.000 lượt/ngày.', suggest: false, shared: true }
+        : { when: 'thường chỉ sau vài phút — model miễn phí này đang quá tải hoặc bạn gọi quá nhanh (tối đa ~20 lượt/phút).',
+            tip: 'Đổi sang một model miễn phí khác thường giải quyết được ngay:', suggest: true };
+    case 'gemini':
+      return { when: daily || /day/i.test(err) ? `khoảng ${fmtTime(nextMidnightPT())} — hạn mức theo ngày của Gemini làm mới lúc nửa đêm giờ Mỹ (Thái Bình Dương).`
+          : 'sau khoảng 1 phút nếu chỉ do gọi quá nhanh; nếu hết hạn mức ngày thì ' + `khoảng ${fmtTime(nextMidnightPT())}.`,
+        tip: 'Mỗi model Gemini có hạn mức riêng — đổi sang model khác để dùng tiếp:', suggest: true };
+    case 'claude-code': {
+      const m = err.match(/resets?\s+(?:at\s+)?([^·\n→.]+)/i);
+      return { when: m ? `lúc ${m[1].trim()} (theo thông báo của Claude).` : 'trong vòng 5 giờ — hạn mức gói Claude làm mới theo chu kỳ 5 giờ và theo tuần. Xem chính xác tại claude.ai → Settings → Usage.',
+        tip: 'Hạn mức này dùng chung với claude.ai. Có thể đổi Claude sang model "haiku" cho đỡ tốn hạn mức:', suggest: true };
+    }
+    default:
+      return { when: 'khi tài khoản có lại số dư hoặc hết giới hạn tốc độ.', tip: 'Đây là API trả phí — kiểm tra số dư trên trang của nhà cung cấp.', suggest: false };
+  }
+}
+let modelCache = null;
+async function suggestModels(mem) {
+  if (mem.provider === 'claude-code') return ['haiku', 'sonnet'].filter(x => x !== mem.model);
+  if (!modelCache) { try { modelCache = await api.models(); } catch { modelCache = {}; } }
+  if (mem.provider === 'gemini') {
+    const list = (modelCache.gemini || []).map(m => m.id).filter(id => /flash/.test(id) && !/image|tts|live|audio|embedding|preview/.test(id));
+    const base = list.length ? list : ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.5-flash'];
+    return [...new Set(base)].filter(x => x !== mem.model).slice(0, 3);
+  }
+  if (mem.provider === 'openrouter') {
+    const list = (modelCache.openrouter || []).map(m => m.id);
+    const used = new Set(config.members.map(m => m.model));
+    const pref = ['openrouter/free', ...list.filter(id => /gpt-oss|llama|qwen|gemma|mistral|nemotron|deepseek|glm/i.test(id)), ...list];
+    return [...new Set(pref)].filter(x => x !== mem.model && !used.has(x)).slice(0, 3);
+  }
+  return [];
+}
+async function handleQuota(mem, err) {
+  const adv = quotaAdvice(mem, err);
+  // OpenRouter hết lượt theo ngày: mọi thành viên dùng model miễn phí đều bị ảnh hưởng
+  const group = adv.shared ? config.members.filter(m => m.enabled && m.provider === 'openrouter' && /:free$|^openrouter\/free$/.test(m.model)) : [mem];
+  group.forEach(m => exhausted.set(m.id, { provider: m.provider, at: Date.now() }));
+  errorIds.delete(mem.id);
+  const suggestions = adv.suggest ? (await suggestModels(mem)) : [];
+  addMessage({ role: 'quota', memberIds: group.map(m => m.id), names: group.map(m => m.name), when: adv.when, tip: adv.tip, suggestions, raw: err });
+  renderSide();
+}
+function renderQuota(m) {
+  const mem = memberById(m.memberIds[0]) || { name: m.names[0], color: '#888', provider: '' };
+  const names = m.names.join(', ');
+  const still = m.memberIds.some(id => exhausted.has(id));
+  return `<div class="quota"><div class="portrait">${spriteSVG(avatarOf(mem), mem.color)}</div><div style="min-width:0;flex:1">
+    <div class="qt">💤 ${esc(names)} đã hết lượt${still ? ' — tạm ngồi ngoài, các AI khác vẫn thảo luận tiếp' : ''}</div>
+    <p><b>Có lượt lại:</b> ${esc(m.when)}</p>
+    <p>${esc(m.tip)}</p>
+    <div class="acts">${(m.suggestions || []).map(x => `<button class="chip" data-switch="${esc(mem.id)}" data-model="${esc(x)}">↪ Đổi ${esc(mem.name)} sang ${esc(x)}</button>`).join('')}
+      ${still ? `<button class="btn" data-retry="${esc(m.memberIds.join(','))}">↻ Thử lại</button>` : ''}</div>
+    <details><summary>Chi tiết lỗi</summary>${esc(m.raw)}</details></div></div>`;
+}
+async function retryMembers(ids) {
+  ids.forEach(id => exhausted.delete(id));
+  renderSide(); renderFeed();
+  if (running) { setStatus('Đã cho quay lại — sẽ được gọi ở lượt tiếp theo.'); return; }
+  const mems = ids.map(memberById).filter(m => m && m.enabled);
+  if (!mems.length || !room.topic) return;
+  await runSequence('Gọi lại', mems.length, async () => {
+    for (const mem of mems) {
+      if (stopRequested) break;
+      await speak(mem, `Bạn (${mem.name}) vừa quay lại phòng sau khi tạm vắng. Hãy đọc diễn biến gần nhất và phát biểu ý kiến của bạn.` +
+        (isConsensusMode() ? `\nNhớ kết thúc bằng 2 dòng PHIẾU: và LÝ DO:.` : ''), { vote: isConsensusMode() });
+    }
+  });
+}
+feed.addEventListener('click', async e => {
+  const r = e.target.closest('[data-retry]');
+  if (r) return retryMembers(r.dataset.retry.split(','));
+  const sw = e.target.closest('[data-switch]');
+  if (sw) {
+    const mem = memberById(sw.dataset.switch); if (!mem) return;
+    mem.model = sw.dataset.model;
+    await api.saveConfig({ members: config.members });
+    addMessage({ role: 'notice', text: `Đã đổi ${mem.name} sang model ${mem.model}.` });
+    return retryMembers([mem.id]);
+  }
+});
 
 // ================= Điều phối =================
 async function speak(mem, instruction, opts = {}) {
@@ -1035,7 +1162,10 @@ async function speak(mem, instruction, opts = {}) {
   try {
     const data = await api.speak(mem, buildSystem(mem, opts), buildPrompt(mem, instruction), currentCtrl.signal);
     busyId = null; removeTyping();
-    if (data.error) { errorIds.add(mem.id); addMessage({ role: 'notice', error: true, text: `${mem.name} không trả lời được: ${data.error}` }); return false; }
+    if (data.error) {
+      if (isQuotaError(data.error)) { await handleQuota(mem, data.error); return false; }
+      errorIds.add(mem.id); addMessage({ role: 'notice', error: true, text: `${mem.name} không trả lời được: ${data.error}` }); return false;
+    }
     errorIds.delete(mem.id);
     let text = cleanReply(data.text, mem), vote;
     if (opts.vote) {
@@ -1076,7 +1206,7 @@ function defaultRun() {
 
 async function runRounds(n, consensus = false) {
   if (!enabledMembers().length) { addMessage({ role: 'notice', error: true, text: 'Chưa có thành viên nào trong phòng. Bật ít nhất một AI ở cột bên phải.' }); return; }
-  if (consensus && enabledMembers().length < 2) { addMessage({ role: 'notice', error: true, text: 'Chế độ đồng thuận cần ít nhất 2 thành viên.' }); return; }
+  if (consensus && activeMembers().length < 2) { addMessage({ role: 'notice', error: true, text: 'Chế độ đồng thuận cần ít nhất 2 thành viên.' }); return; }
   if (consensus) {
     const st = stubbornMembers();
     if (st.length) addMessage({ role: 'notice', text: `Lưu ý: ${st.map(m => m.name).join(', ')} có cá tính kiểu “không bao giờ đồng ý / phản đối số đông” — phòng có thể chạy đến trần ${n} vòng mà không chốt được.` });
@@ -1089,10 +1219,13 @@ async function runRounds(n, consensus = false) {
       const roundNo = countRounds() + 1;
       progress.label = consensus ? `Vòng ${roundNo} · trần ${countRounds() + n - r + 1}` : `Vòng ${roundNo}`;
       addMessage({ role: 'round', text: `Vòng ${roundNo}` });
-      const order = config.settings.shuffle ? shuffle(enabledMembers()) : enabledMembers();
+      if (!activeMembers().length) { addMessage({ role: 'notice', error: true, text: 'Tất cả AI trong phòng đều đang hết lượt nên phòng tạm dừng. Xem gợi ý phía trên để đổi model, hoặc bấm “↻ Thử lại” khi có lượt.' }); break; }
+      if (consensus && activeMembers().length < 2) { addMessage({ role: 'notice', error: true, text: 'Chỉ còn một AI hoạt động nên không thể bỏ phiếu đồng thuận. Phòng tạm dừng.' }); break; }
+      const order = config.settings.shuffle ? shuffle(activeMembers()) : activeMembers();
       let ok = 0, tried = 0;
       for (const mem of order) {
         if (stopRequested) break;
+        if (!isActive(mem)) continue; // vừa hết lượt giữa vòng (vd. OpenRouter hết lượt chung)
         const hasAI = room.messages.some(m => m.role === 'ai');
         let instruction = !hasAI
           ? `Bạn là người phát biểu đầu tiên. Hãy nêu quan điểm của bạn về chủ đề.`
@@ -1108,7 +1241,8 @@ async function runRounds(n, consensus = false) {
         tried++; if (await speak(mem, instruction, { vote: consensus })) ok++;
       }
       roundsRun++;
-      if (tried && !ok) { addMessage({ role: 'notice', error: true, text: 'Cả vòng không ai trả lời được nên phòng tạm dừng. Xem lỗi phía trên và kiểm tra Cài đặt.' }); break; }
+      if (tried && !ok && activeMembers().length) { addMessage({ role: 'notice', error: true, text: 'Cả vòng không ai trả lời được nên phòng tạm dừng. Xem lỗi phía trên và kiểm tra Cài đặt.' }); break; }
+      if (!activeMembers().length) { addMessage({ role: 'notice', error: true, text: 'Tất cả AI trong phòng đều đang hết lượt nên phòng tạm dừng. Xem gợi ý phía trên để đổi model, hoặc bấm “↻ Thử lại” khi có lượt.' }); break; }
       if (consensus && !stopRequested) {
         const t = tallyOf(roundVotes());
         addMessage({ role: 'tally', text: `Phiếu sau vòng ${roundNo}:`, counts: t.counts, missing: t.missing });
@@ -1133,6 +1267,7 @@ async function runMentions(mems) {
   await runSequence('Trả lời chủ phòng', mems.length, async () => {
     for (const mem of mems) {
       if (stopRequested) break;
+      if (exhausted.has(mem.id)) { addMessage({ role: 'notice', text: `${mem.name} đang hết lượt 💤 — bấm “↻ Thử lại” ở thông báo phía trên nếu muốn gọi lại.` }); continue; }
       await speak(mem, `Chủ phòng vừa gọi tên bạn (${mem.name}) trong tin nhắn gần nhất. Hãy trả lời trực tiếp Chủ phòng.`);
     }
   });
@@ -1140,7 +1275,7 @@ async function runMentions(mems) {
 async function runSummary(kind, winnerId) {
   const s = config.settings;
   let mem = memberById(s.summarizerId);
-  if (!mem || !mem.enabled) mem = enabledMembers()[0];
+  if (!mem || !isActive(mem)) mem = activeMembers()[0];
   if (!mem) return;
   await runSequence('Đang tổng kết', 1, async () => {
     let extra = '';
@@ -1187,6 +1322,7 @@ function exportMd() {
       lines.push(`**${m.name}**${m.summary ? ' (tổng kết)' : ''}:`, ``, m.text, ``);
       if (m.vote) lines.push(`> 🗳 Phiếu: ${m.vote.forId ? voteLabel(m.vote.forId, m.memberId) : 'không rõ'}${m.vote.changed ? ' — **ĐỔI Ý**' : ''}  `, `> Lý do: ${m.vote.reason || '(không nêu)'}`, ``);
     }
+    else if (m.role === 'quota') lines.push(`> 💤 ${m.names.join(', ')} hết lượt. Có lượt lại: ${m.when}`, ``);
     else if (m.role === 'tally') lines.push(`**${m.text}** ${Object.entries(m.counts).map(([id, c]) => `${memberById(id)?.name || id}: ${c}`).join(' · ')}`, ``);
     else if (m.role === 'verdict') lines.push(`## ${m.winnerId ? '🏆 Đồng thuận' : '⚖️ Chưa đồng thuận'}`, ``, m.text, ``);
     else if (m.role === 'notice') lines.push(`> ${m.text}`, ``);
@@ -1547,6 +1683,9 @@ $('mates').addEventListener('change', async e => {
   memberById(id).enabled = e.target.checked;
   renderSide(); if (!room.messages.length) renderFeed();
   await api.saveConfig({ members: config.members });
+});
+$('mates').addEventListener('click', e => {
+  const r = e.target.closest('[data-retry]'); if (r) { e.preventDefault(); retryMembers([r.dataset.retry]); }
 });
 $('mentionBar').addEventListener('click', e => {
   const b = e.target.closest('[data-mention]'); if (!b) return;
